@@ -1,0 +1,26 @@
+{
+  "name": "discipl-core-ipv8",
+  "version": "1.0.0",
+  "description": "Discipl Core Connector for IPV8 network overlays",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/discipl/discipl-core-ipv8.git"
+  },
+  "author": "Bas Kaptijn",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/discipl/discipl-core-ipv8/issues"
+  },
+  "homepage": "https://github.com/discipl/discipl-core-ipv8#readme",
+  "devDependencies": {
+    "assert": "1.4.1",
+    "vows": "0.8.2"
+  },
+  "dependencies": {
+    "discipl-core-baseconnector": "git+https://github.com/discipl/discipl-core-baseconnector.git"
+  }
+}
