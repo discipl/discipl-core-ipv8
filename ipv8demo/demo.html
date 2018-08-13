@@ -1,0 +1,46 @@
+<html><head><title>ipv8 demo</title></head><body>
+
+<h1>IPV8 Demo</h1>
+setup: please install py_ipv8 by cloning it in pyipv8 folder and make sure dependencies are installed as inidicated in it's README.md
+
+run : python main.py
+
+It will show you the values for idowner_id and attester_id
+Note you'll have to set these idowner_id and attester_id values instead of <idowner_id> and <attester_id> respectively by editing this file manually!
+After step 5 you also need to replace <attribute_hash_from_step_5> with the second value in the triple (something like 'N4Lk6ZsazsAK8WhY4iKQ5kIIfgw=') 
+shown in the result of step 5 by editing this file manually at that moment!
+
+<h3>1a idowner: Request known peers of idowner</h3>
+<a target="resultWindow" href="http://localhost:8086/attestation?type=peers">get peers</a>
+
+<h3>1b attester: Request known peers of attester</h3>
+<a target="resultWindow" href="http://localhost:8087/attestation?type=peers">get peers</a>
+
+<h3>1c verifier: Request known peers of verifier</h3>
+<a target="resultWindow" href="http://localhost:8088/attestation?type=peers">get peers</a>
+
+<h3>2. idowner: Request Attestation of QR attribute from attester </h3>
+<form target="resultWindow" method="POST" action="http://localhost:8086/attestation?attribute_name=QR&type=request&mid=<attester_id>">
+<input type="submit" name="request-attest" value="request-attest"/>
+</form>
+
+<h3>3. attester: Request outstanding attestation requests</h3>
+<a target="resultWindow" href="http://localhost:8087/attestation?type=outstanding">get outstanding attestation requests</a>
+
+<h3>4. attester: Request attest of QR for idowner...</h3>
+<form target="resultWindow" method="POST" action="http://localhost:8087/attestation?attribute_name=QR&type=attest&mid=<idowner_id>&attribute_value=YmluYXJ5ZGF0YQ%3D%3D">
+<input type="submit" name="request-attributes" value="request-attributes"/>
+</form>
+
+<h3>5. idowner: Request attributes isued by attester</h3>
+<a target="resultWindow" href="http://localhost:8086/attestation?type=attributes&mid=<attester_id>">get attributes</a>
+
+<h3>6. verifier: Request Verify proof of QR attribute value of idowner... </h3>
+<form target="resultWindow" method="POST" action="http://localhost:8088/attestation?attribute_values=YmluYXJ5ZGF0YQ%3D%3D&type=verify&mid=<idowner_id>&attribute_hash=<attribute_hash_from_step_5>">
+<input type="submit" name="request-verify" value="request-verify"/>
+</form>
+
+<h3>7. verifier: Request Verification Result</h3>
+<a target="resultWindow" href="http://localhost:8088/attestation?type=verification_output">get verification output</a>
+
+</body></html>
