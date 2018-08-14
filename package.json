@@ -4,7 +4,7 @@
   "description": "Discipl Core Connector for IPV8 network overlays",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vows test/discipl-core-ipv8-test.js --spec"
   },
   "repository": {
     "type": "git",
@@ -21,6 +21,9 @@
     "vows": "0.8.2"
   },
   "dependencies": {
-    "discipl-core-baseconnector": "git+https://github.com/discipl/discipl-core-baseconnector.git"
+    "discipl-core-baseconnector": "git+https://github.com/discipl/discipl-core-baseconnector.git",
+    "crypto-js": "3.1.9-1",
+    "request": "2.88.0",
+    "request-promise-native": "1.0.5"
   }
 }
