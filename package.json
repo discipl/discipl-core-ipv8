@@ -16,14 +16,22 @@
     "url": "https://github.com/discipl/discipl-core-ipv8/issues"
   },
   "homepage": "https://github.com/discipl/discipl-core-ipv8#readme",
-  "devDependencies": {
-    "assert": "1.4.1",
-    "vows": "0.8.2"
-  },
   "dependencies": {
-    "discipl-core-baseconnector": "git+https://github.com/discipl/discipl-core-baseconnector.git",
-    "crypto-js": "3.1.9-1",
-    "request": "2.88.0",
-    "request-promise-native": "1.0.5"
+    "@discipl/core-baseconnector": "0.2.2",
+    "crypto-js": "4.0.0",
+    "loglevel": "1.6.7",
+    "node-fetch": "2.6.0"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.8.4",
+    "@babel/core": "7.8.7",
+    "@babel/preset-env": "7.8.7",
+    "@babel/register": "7.8.6",
+    "@types/node-fetch": "^2.5.5",
+    "@typescript-eslint/eslint-plugin": "^2.24.0",
+    "@typescript-eslint/parser": "^2.24.0",
+    "assert": "1.4.1",
+    "standard": "12.0.1",
+    "typescript": "^3.8.3"
   }
 }
