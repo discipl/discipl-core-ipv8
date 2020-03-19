@@ -18,6 +18,10 @@ class Ipv8Connector extends BaseConnector {
     return 'ipv8'
   }
 
+  configure (serverEndpoint: string): void {
+    this.ipv8AttestationClient = new Ipv8AttestationClient(serverEndpoint)
+  }
+
   /**
    * Looks up the corresponding did for a particular claim
    *
@@ -34,8 +38,17 @@ class Ipv8Connector extends BaseConnector {
    * @param did
    * @returns {Promise<string>} Link to the last claim made by this did
    */
-  async getLatestClaim (did: string) {
+  async getLatestClaim (did: string): Promise<string> {
     const reference = this.referenceFromDid(did)
+  }
+
+  /**
+   * Generate a new identify
+   *
+   * @returns Created identity
+   */
+  async newIdentity (): Promise<Ssid> {
+    throw new Error('Method not implemented.')
   }
 
   /**
@@ -46,14 +59,20 @@ class Ipv8Connector extends BaseConnector {
    * If the exact claim has been made before, this will return the existing link, but not recreate the claim.
    *
    * @param ssid - Identity that expresses the claim
+   * @param {string} ssid.privkey - Private key to sign the claim
    * @param {object} [data.DISCIPL_ALLOW] - Special type of claim that manages ACL
    * @param {string} [data.DISCIPL_ALLOW.scope] - Single link. If not present, the scope is the whole channel
    * @param {string} [data.DISCIPL_ALLOW.did] - Did that is allowed access. If not present, everyone is allowed.
    */
-  // TODO Did is not needed for Ipv8 since the url is a direct reference to the owner
-  // TODO Think about the `DISCIPL_ALLOW` properties
-  async claim (ssid: Ssid, data: object): Promise<void> {
-    this.ipv8AttestationClient.requestAttestation(JSON.stringify(data), '')
+  // TODO The API does not work out because there is no claim unitl it is attested. Hijack the DISCIPLE_ALLOW.did?
+  async claim (ssid: string, privkey: string, data: object): Promise<string> {
+    const reference = this.referenceFromDid(ssid)
+    const metadata = {
+      message: data,
+      publicKey: reference
+    }
+
+    this.ipv8AttestationClient.requestAttestation(JSON.stringify(data), '', metadata)
   }
 
   /**
@@ -64,20 +83,6 @@ class Ipv8Connector extends BaseConnector {
    */
   async get (link: string, did: string = null, privkey: string = null) {
     return this.ipv8AttestationClient.getAttributes()
-  }
-
-  /**
-   * Observe claims being made in the connector
-   *
-   * @param did - Only observe claims from this did
-   * @param claimFilter - Only observe claims that contain this data. If a value is null, claims with the key will be observed.
-   * @param accessorDid - Did requesting access
-   * @param accessorPrivkey - Private key of did requesting access
-   * @returns {Promise<{observable: Observable<ExtendedClaimInfo>, readyPromise: Promise<>}>} -
-   * The observable can be subscribed to. The readyPromise signals that the observation has truly started.
-   */
-  async observe (did: Ssid, claimFilter: object = {}, accessorDid: string = null, accessorPrivkey: string = null) {
-
   }
 }
 

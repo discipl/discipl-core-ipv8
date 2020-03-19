@@ -20,9 +20,13 @@ export class Ipv8AttestationClient {
    */
   async getPeers (): Promise<string[]> {
     const urlParams = new URLSearchParams({ type: 'peers' })
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
-    return fetch(`${this.baseUrl}/attestations` + urlParams)
-      .then(res => res.status < 200 ? new Error('Error when sending request to Ipv8') : res.json())
+    if (res.status < 200) {
+      throw new Error('Error when sending request to Ipv8')
+    }
+
+    return res.json()
   }
 
   /**
@@ -33,15 +37,19 @@ export class Ipv8AttestationClient {
    */
   async getAttributes (mid: string = null): Promise<Attribute[]> {
     const urlParams = new URLSearchParams({ type: 'attributes', mid: mid })
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
-    return fetch(`${this.baseUrl}/attestations` + urlParams)
-      .then(res => res.status < 200 ? new Error('Error when sending request to Ipv8') : res.json())
-      .then((res: string[][]) => res.map(attribute => ({
-        name: attribute[0],
-        hash: attribute[1],
-        metadata: attribute[2],
-        attestor: attribute[3]
-      })))
+    if (res.status < 200) {
+      throw new Error('Error when sending request to Ipv8')
+    }
+
+    const json: string[][] = await res.json()
+    return json.map(attribute => ({
+      name: attribute[0],
+      hash: attribute[1],
+      metadata: attribute[2],
+      attestor: attribute[3]
+    }))
   }
 
   /**
@@ -49,9 +57,13 @@ export class Ipv8AttestationClient {
    */
   async getOutstanding (): Promise<OutstandingRequest> {
     const urlParams = new URLSearchParams({ type: 'outstanding' })
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
-    return fetch(`${this.baseUrl}/attestations` + urlParams)
-      .then(res => res.status < 200 ? new Error('Error when sending request to Ipv8') : res.json())
+    if (res.status < 200) {
+      throw new Error('Error when sending request to Ipv8')
+    }
+
+    return res.json()
   }
 
   /**
@@ -59,9 +71,13 @@ export class Ipv8AttestationClient {
    */
   async getOutstandingVerify (): Promise<OutstandingVerifyRequest> {
     const urlParams = new URLSearchParams({ type: 'outstanding_verify' })
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
-    return fetch(`${this.baseUrl}/attestations` + urlParams)
-      .then(res => res.status < 200 ? new Error('Error when sending request to Ipv8') : res.json())
+    if (res.status < 200) {
+      throw new Error('Error when sending request to Ipv8')
+    }
+
+    return res.json()
   }
 
   /**
@@ -69,9 +85,13 @@ export class Ipv8AttestationClient {
    */
   async getVerificationOutput (): Promise<VerificationOutput> {
     const urlParams = new URLSearchParams({ type: 'verification_output' })
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
-    return fetch(`${this.baseUrl}/attestations` + urlParams)
-      .then(res => res.status < 200 ? new Error('Error when sending request to Ipv8') : res.json())
+    if (res.status < 200) {
+      throw new Error('Error when sending request to Ipv8')
+    }
+
+    return res.json()
   }
 
   /**
@@ -88,7 +108,12 @@ export class Ipv8AttestationClient {
       attribute_name: attributeName
     })
 
-    return fetch(`${this.baseUrl}/attestations` + urlParams, { method: 'POST' })
-      .then(res => res.status < 200 ? new Error('Error when sending request to Ipv8') : res.json())
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams, { method: 'POST' })
+
+    if (res.status < 200) {
+      throw new Error('Error when sending request to Ipv8')
+    }
+
+    return res.json()
   }
 }
