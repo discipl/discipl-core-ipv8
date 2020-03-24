@@ -4,6 +4,8 @@
         [
             "@babel/preset-env",
             {
+                "useBuiltIns": "usage",
+                "corejs": 3,
                 "targets": {
                     "node": "current",
                     "browsers": [
@@ -15,6 +17,8 @@
         ]
     ],
     "plugins": [
+        "istanbul",
+        "@babel/plugin-transform-async-to-generator",
         "@babel/proposal-class-properties",
         "@babel/proposal-object-rest-spread"
     ]

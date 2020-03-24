@@ -7,8 +7,15 @@
         "standard",
         "plugin:@typescript-eslint/recommended"
     ],
+    "env": {
+        "browser": true,
+        "mocha": true
+    },
     "rules": {
-        "semi": ["warn", "never"],
+        "semi": [
+            "warn",
+            "never"
+        ],
         "no-var": [
             "error"
         ],
@@ -18,6 +25,9 @@
                 "destructuring": "all",
                 "ignoreReadBeforeAssign": true
             }
+        ],
+        "@typescript-eslint/triple-slash-reference": [
+            "off"
         ]
     }
 }
