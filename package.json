@@ -4,7 +4,11 @@
   "description": "Discipl Core Connector for IPV8 network overlays",
   "main": "index.js",
   "scripts": {
-    "test": "vows test/discipl-core-ipv8-test.js --spec"
+    "type-check": "tsc --noEmit",
+    "type-check:watch": "npm run type-check -- --watch",
+    "build": "npm run build:types && npm run build:js",
+    "build:types": "tsc",
+    "build:js": "babel src --out-dir lib --extensions \".ts\""
   },
   "repository": {
     "type": "git",
@@ -19,14 +23,18 @@
   "dependencies": {
     "@discipl/core-baseconnector": "0.2.2",
     "crypto-js": "4.0.0",
+    "json-stable-stringify": "^1.0.1",
     "loglevel": "1.6.7",
     "node-fetch": "2.6.0"
   },
   "devDependencies": {
     "@babel/cli": "7.8.4",
     "@babel/core": "7.8.7",
+    "@babel/plugin-proposal-class-properties": "^7.8.3",
     "@babel/preset-env": "7.8.7",
+    "@babel/preset-typescript": "^7.9.0",
     "@babel/register": "7.8.6",
+    "@types/json-stable-stringify": "^1.0.32",
     "@types/node-fetch": "^2.5.5",
     "@typescript-eslint/eslint-plugin": "^2.24.0",
     "@typescript-eslint/parser": "^2.24.0",
