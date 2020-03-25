@@ -8,7 +8,9 @@
     "build:types": "tsc",
     "build:js": "babel src --out-dir lib --extensions \".ts\"",
     "test": "mocha",
-    "test:coverage": "nyc mocha"
+    "test:coverage": "nyc mocha",
+    "lint": "eslint \"src/**\"",
+    "lint:fix": "eslint \"src/**\" --fix"
   },
   "repository": {
     "type": "git",
