@@ -6,14 +6,14 @@ export interface Attribute {
 }
 
 export interface OutstandingRequest {
-    peerId: string;
-    attributeName: string;
-    metadata: object;
+    peerMid: string;
+    name: string;
+    metadata: string;
 }
 
 export interface OutstandingVerifyRequest {
-    peerId: string;
-    attributeName: string;
+    peerMid: string;
+    name: string;
 }
 
 export interface VerificationOutput {

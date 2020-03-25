@@ -1,5 +1,6 @@
 import fetch from 'node-fetch'
-import { Attribute, OutstandingRequest, ApiResponse, OutstandingVerifyRequest, VerificationOutput } from './types/ipv8'
+import * as IPv8 from './types/ipv8'
+import { Claim } from 'ipv8-connector'
 
 export class Ipv8AttestationClient {
   private baseUrl: string
@@ -29,13 +30,29 @@ export class Ipv8AttestationClient {
     return res.json()
   }
 
+  async getOutstanding (): Promise<IPv8.OutstandingRequest[]> {
+    const urlParams = new URLSearchParams({ type: 'outstanding' })
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
+
+    if (res.status < 200) {
+      throw new Error('Error when sending request to Ipv8')
+    }
+
+    const json: string[][] = await res.json()
+    return json.map(request => ({
+      peerMid: request[0],
+      name: request[1],
+      metadata: request[2]
+    }))
+  }
+
   /**
    * Get all attested attributes of this peer
    *
    * @param {string} mid Base64 encoded peer reference
    * @return All attributes of the current peer.
    */
-  async getAttributes (mid: string = null): Promise<Attribute[]> {
+  async getAttributes (mid: string = null): Promise<IPv8.Attribute[]> {
     const urlParams = new URLSearchParams({ type: 'attributes', mid: mid })
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
@@ -53,23 +70,9 @@ export class Ipv8AttestationClient {
   }
 
   /**
-   * Get all outsanding requests for attestation
-   */
-  async getOutstanding (): Promise<OutstandingRequest> {
-    const urlParams = new URLSearchParams({ type: 'outstanding' })
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
-
-    if (res.status < 200) {
-      throw new Error('Error when sending request to Ipv8')
-    }
-
-    return res.json()
-  }
-
-  /**
    * Get all outstanding requests for verification
    */
-  async getOutstandingVerify (): Promise<OutstandingVerifyRequest> {
+  async getOutstandingVerify (): Promise<IPv8.OutstandingVerifyRequest> {
     const urlParams = new URLSearchParams({ type: 'outstanding_verify' })
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
@@ -83,7 +86,7 @@ export class Ipv8AttestationClient {
   /**
    * Get the results of requested verifications
    */
-  async getVerificationOutput (): Promise<VerificationOutput> {
+  async getVerificationOutput (): Promise<IPv8.VerificationOutput> {
     const urlParams = new URLSearchParams({ type: 'verification_output' })
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
@@ -97,9 +100,11 @@ export class Ipv8AttestationClient {
   /**
    * Request another peer to attest an attribute
    *
-   * @param attributeName Attribute (or claim) that needs attestation
+   * @param attributeName Name of the attribute to request attestation for
+   * @param peerToAttest The base64 mid of the peer that will attest the attribute
+   * @param metadata Optional metatadat
    */
-  async requestAttestation (attributeName: string, peerToAttest: string, metadata: object = {}): Promise<ApiResponse> {
+  async requestAttestation (attributeName: string, peerToAttest: string, metadata: object = {}): Promise<IPv8.ApiResponse> {
     const urlParams = new URLSearchParams({
       type: 'request',
       mid: peerToAttest,
@@ -112,6 +117,32 @@ export class Ipv8AttestationClient {
 
     if (res.status < 200) {
       throw new Error('Error when sending request to Ipv8')
+    }
+
+    return res.json()
+  }
+
+  /**
+   * Attest a attribute with a value
+   *
+   * @param attributeName Attribute to attest
+   * @param attributeValue Value to test the attribute with
+   * @param attributeOwner The base64 mid of the owner of the attribute
+   */
+  async attest (attributeName: string, attributeValue: string, attributeOwner: string): Promise<IPv8.ApiResponse> {
+    const urlParams = new URLSearchParams({
+      type: 'attest',
+      mid: attributeOwner,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      attribute_name: attributeName,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      attribute_value: attributeValue
+    })
+
+    const res = await fetch(`${this.baseUrl}/attestations` + urlParams, { method: 'POST' })
+
+    if (res.status < 200) {
+      throw new Error(`Error when attesting ${attributeName}: ${JSON.stringify(res.body)}`)
     }
 
     return res.json()

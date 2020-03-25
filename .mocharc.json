@@ -3,5 +3,6 @@
         "ts"
     ],
     "spec": "test/**/*.spec.ts",
-    "require": "test/babel-register.js"
+    "require": "test/babel-register.js",
+    "unhandled-rejections": "strict"
 }

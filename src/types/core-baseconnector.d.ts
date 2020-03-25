@@ -9,12 +9,12 @@ declare module '@discipl/core-baseconnector' {
 
       linkFromReference(claimReference: string): string
       didFromReference(reference: string): string
-      getConnectorName(linkOrDid: string): string
-      referenceFromLink(link: string): string
-      referenceFromDid(did: string): string
-      isLink(str: string): boolean
-      idDid(str: string): boolean
-      verify(did: Ssid, data: object, verifierDid?: string, verifierprivkey?: string): Promise<string>
+      static getConnectorName(linkOrDid: string): string
+      static referenceFromLink(link: string): string
+      static referenceFromDid(did: string): string
+      static isLink(str: any): boolean
+      static idDid(str: string): boolean
+      static verify(did: Ssid, data: object, verifierDid?: string, verifierprivkey?: string): Promise<string>
     }
 
     export interface Ssid {
