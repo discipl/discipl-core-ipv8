@@ -29,7 +29,7 @@ describe('discipl-core-ipv8', () => {
     it('should be able to create a new claim', async () => {
       const link = await connector.claim('test', 'irrelevant', { 'need': 'beer' })
 
-      expect(link).to.eq('link:discipl:ipv8:temp:%7B%22need%22%3A%22beer%22%7D')
+      expect(link).to.eq('link:discipl:ipv8:temp:eyJuZWVkIjoiYmVlciJ9')
     })
 
     it('should be able to attest a claim that is not attested before', async () => {

@@ -1,12 +1,13 @@
 /// <reference path="./types/core-baseconnector.d.ts"/>
 import { BaseConnector, Ssid } from '@discipl/core-baseconnector'
 import { Ipv8AttestationClient } from './Ipv8AttestationClient'
+import { Base64Utils } from './utils/base64'
 import { Peer } from 'ipv8-connector'
 import stringify from 'json-stable-stringify'
 
 export class Ipv8Connector extends BaseConnector {
   LINK_TEMPORARY_INIDACOTR = 'temp'
-  LINK_PERMANTENT_INICATOR = 'perm'
+  LINK_PERMANTENT_INDICATOR = 'perm'
   ipv8AttestationClient: Ipv8AttestationClient
 
   constructor () {
@@ -45,8 +46,7 @@ export class Ipv8Connector extends BaseConnector {
   extractPeerFromDid (did: string): Peer {
     const reference = BaseConnector.referenceFromDid(did)
 
-    // TODO Is base64 encoding needed?
-    return JSON.parse(decodeURIComponent(reference))
+    return JSON.parse(Base64Utils.fromBase64(reference))
   }
 
   /**
@@ -101,7 +101,7 @@ export class Ipv8Connector extends BaseConnector {
       if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
         const attributeName = refSplit[1]
         return this.attestClaim(ssid, attributeName, attestationValue)
-      } else if (indicator === this.LINK_PERMANTENT_INICATOR) {
+      } else if (indicator === this.LINK_PERMANTENT_INDICATOR) {
         const attributeHash = refSplit[1]
         return this.reattestClaim(ssid, attributeHash, attestationValue)
       }
@@ -121,8 +121,7 @@ export class Ipv8Connector extends BaseConnector {
    * @param attestationValue Value to attest the attribute with
    */
   async attestClaim (ssid: string, attributeName: string, attestationValue: string): Promise<string> {
-    // TODO when using a object as attribute name, the colon causes issues. However urlencoding might not be the best option
-    attributeName = decodeURIComponent(attributeName)
+    attributeName = Base64Utils.fromBase64(attributeName)
     const claim = (await this.ipv8AttestationClient.getOutstanding()).filter(outstanding => outstanding.name === attributeName).pop()
 
     if (!claim) {
@@ -150,6 +149,7 @@ export class Ipv8Connector extends BaseConnector {
       return Promise.reject(new Error(`Attribute with hash '${attributeHash}' could not be found`))
     }
 
+    // TODO The attribute owner is not correct yet
     await this.ipv8AttestationClient.attest(claim.name, attestationValue, '')
 
     return this.ipv8AttestationClient.getAttributes()
@@ -164,9 +164,8 @@ export class Ipv8Connector extends BaseConnector {
    * @param data Data that is claimed
    * @return Temporary link to the made claim
    */
-  async newClaim (ssid: string, data: any): Promise<string> {
-    // TODO when using a object as attribute name, the colon causes issues. However urlencoding might not be the best option
-    const stringData = encodeURIComponent(stringify(data))
+  async newClaim (ssid: string, data: object|string): Promise<string> {
+    const stringData = Base64Utils.toBase64(stringify(data))
     await this.ipv8AttestationClient.requestAttestation(stringData, '')
 
     return this.linkFromReference(`temp:${stringData}`)
