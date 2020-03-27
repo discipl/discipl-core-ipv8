@@ -1,18 +1,22 @@
 /// <reference path="./types/core-baseconnector.d.ts"/>
-import { BaseConnector, Ssid } from '@discipl/core-baseconnector'
-import { Ipv8AttestationClient } from './Ipv8AttestationClient'
+import { BaseConnector, Ssid, Claim } from '@discipl/core-baseconnector'
+import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
 import { Peer } from 'ipv8-connector'
 import stringify from 'json-stable-stringify'
+import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
 
 export class Ipv8Connector extends BaseConnector {
   LINK_TEMPORARY_INIDACOTR = 'temp'
   LINK_PERMANTENT_INDICATOR = 'perm'
+  LINK_DELIMITER = ':'
   ipv8AttestationClient: Ipv8AttestationClient
+  ipv8TrustchainClient: Ipv8TrustchainClient
 
   constructor () {
     super()
     this.ipv8AttestationClient = new Ipv8AttestationClient('')
+    this.ipv8TrustchainClient = new Ipv8TrustchainClient('')
   }
 
   /**
@@ -46,7 +50,11 @@ export class Ipv8Connector extends BaseConnector {
   extractPeerFromDid (did: string): Peer {
     const reference = BaseConnector.referenceFromDid(did)
 
-    return JSON.parse(Base64Utils.fromBase64(reference))
+    try {
+      return JSON.parse(Base64Utils.fromBase64(reference))
+    } catch (e) {
+      throw Error(`Could not parse of decode DID: ${e}`)
+    }
   }
 
   /**
@@ -86,18 +94,17 @@ export class Ipv8Connector extends BaseConnector {
     const objectValues = Object.values(claim)
 
     // If the first value is a link the claim is an attestation
-    if (objectValues.length > 0 && BaseConnector.isLink(objectValues[0])) {
+    if (objectValues.length === 1 && BaseConnector.isLink(objectValues[0])) {
       const attestationValue = objectKeys[0]
       const attestationLink = objectValues[0]
       const reference = BaseConnector.referenceFromLink(attestationLink)
-      const refSplit = reference?.split(':')
+      const refSplit = reference?.split(this.LINK_DELIMITER)
 
-      if (reference === null || refSplit.length !== 2) {
-        return Promise.reject(new Error('Could not extract a valid reference from the given claim'))
+      if (refSplit.length !== 2) {
+        throw new Error('Could not extract a valid reference from the given claim')
       }
 
       const indicator = refSplit[0]
-
       if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
         const attributeName = refSplit[1]
         return this.attestClaim(ssid, attributeName, attestationValue)
@@ -106,7 +113,7 @@ export class Ipv8Connector extends BaseConnector {
         return this.reattestClaim(ssid, attributeHash, attestationValue)
       }
 
-      return Promise.reject(new Error(`Unknown link indirector: ${indicator}`))
+      throw new Error(`Unknown link indirector: ${indicator}`)
     }
 
     return this.newClaim(ssid, claim)
@@ -121,17 +128,21 @@ export class Ipv8Connector extends BaseConnector {
    * @param attestationValue Value to attest the attribute with
    */
   async attestClaim (ssid: string, attributeName: string, attestationValue: string): Promise<string> {
+    const attester = this.extractPeerFromDid(ssid)
+
+    // Attribute names are base64 to avoid conflicts with colons when a object is given
     attributeName = Base64Utils.fromBase64(attributeName)
-    const claim = (await this.ipv8AttestationClient.getOutstanding()).filter(outstanding => outstanding.name === attributeName).pop()
+    const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.name === attributeName)
 
     if (!claim) {
-      return Promise.reject(new Error(`Attestation request for ${attributeName} could not be found`))
+      throw new Error(`Attestation request for "${attributeName}" could not be found`)
     }
 
-    await this.ipv8AttestationClient.attest(claim.name, attestationValue, '')
+    await this.ipv8AttestationClient.attest(claim.name, attestationValue, claim.peerMid)
 
-    return this.ipv8AttestationClient.getAttributes()
-      .then(attributes => attributes.filter(a => a.name === attributeName)[0])
+    return this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)
+      .then(blocks => blocks.find(block => block.transaction.name === attributeName))
+      // TODO Confirm if the hash of block from the attester should be used or the attribute owners block
       .then(attribute => this.linkFromReference(`perm:${attribute.hash}`))
   }
 
@@ -142,18 +153,20 @@ export class Ipv8Connector extends BaseConnector {
    * @param attributeHash Hash of the attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
+  // FIXME Is it possible to store the previous claim into the metadata?
   async reattestClaim (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
-    const claim = (await this.ipv8AttestationClient.getAttributes()).filter(attributes => attributes.hash === attributeHash).pop()
+    const attester = this.extractPeerFromDid(ssid)
+    const claim = (await this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)).find(blocks => blocks.hash === attributeHash)
 
     if (!claim) {
-      return Promise.reject(new Error(`Attribute with hash '${attributeHash}' could not be found`))
+      throw new Error(`Attribute with hash "${attributeHash}" could not be found`)
     }
 
-    // TODO The attribute owner is not correct yet
-    await this.ipv8AttestationClient.attest(claim.name, attestationValue, '')
+    await this.ipv8AttestationClient.attest(claim.transaction.name, attestationValue, '')
 
-    return this.ipv8AttestationClient.getAttributes()
-      .then(attributes => attributes.filter(a => a.hash === attributeHash)[0])
+    return this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)
+      .then(blocks => blocks.find(block => block.hash === attributeHash))
+      // TODO Confirm if the hash of block from the attester should be used or the attribute owners block
       .then(attribute => this.linkFromReference(`perm:${attribute.hash}`))
   }
 
@@ -165,8 +178,11 @@ export class Ipv8Connector extends BaseConnector {
    * @return Temporary link to the made claim
    */
   async newClaim (ssid: string, data: object|string): Promise<string> {
+    const peer = this.extractPeerFromDid(ssid)
+
+    // Attribute names are base64 to avoid conflicts with colons when a object is given
     const stringData = Base64Utils.toBase64(stringify(data))
-    await this.ipv8AttestationClient.requestAttestation(stringData, '')
+    await this.ipv8AttestationClient.requestAttestation(stringData, peer.mid)
 
     return this.linkFromReference(`temp:${stringData}`)
   }
@@ -177,7 +193,7 @@ export class Ipv8Connector extends BaseConnector {
    * @param link - Link to the claim
    * @param did - Did that wants access
    */
-  async get (link: string, did: string = null, privkey: string = null): Promise<{ data: object; previous: string }> {
+  async get (link: string, did: string = null, privkey: string = null): Promise<Claim> {
     throw new Error('Method not implemented.')
   }
 

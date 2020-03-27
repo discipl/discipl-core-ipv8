@@ -17,5 +17,6 @@ export type Claim = {
 
 export type Peer = {
     mid: string;
-    url: string;
+    // TODO It is possible to extract the public_key from the mid
+    publicKey: string;
 }

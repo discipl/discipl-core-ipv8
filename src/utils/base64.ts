@@ -18,6 +18,10 @@ export class Base64Utils {
    * @param base64 Base64 encoded string
    */
   static fromBase64 (base64: string): string {
-    return forge.util.decodeUtf8(forge.util.decode64(base64))
+    try {
+      return forge.util.decodeUtf8(forge.util.decode64(base64))
+    } catch (e) {
+      throw new Error(`Error when decoding base64 string: ${e.message}`)
+    }
   }
 }

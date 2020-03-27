@@ -1,12 +1,11 @@
 import fetch from 'node-fetch'
-import * as IPv8 from './types/ipv8'
-import { Claim } from 'ipv8-connector'
+import * as IPv8 from '../types/ipv8'
 
 export class Ipv8AttestationClient {
   private baseUrl: string
 
   /**
-   * Create a new Ipv8Peer instance
+   * Create a new IPv8 Attestation client instance
    *
    * @param {string} apiUrl Base url of the Ipv8 rest api including the port
    */
@@ -24,18 +23,21 @@ export class Ipv8AttestationClient {
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
     if (res.status < 200) {
-      throw new Error('Error when sending request to Ipv8')
+      throw new Error(`Error when sending request to IPv8: ${res.body}`)
     }
 
     return res.json()
   }
 
+  /**
+   * Get all outstanding requests for attestation
+   */
   async getOutstanding (): Promise<IPv8.OutstandingRequest[]> {
     const urlParams = new URLSearchParams({ type: 'outstanding' })
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
     if (res.status < 200) {
-      throw new Error('Error when sending request to Ipv8')
+      throw new Error(`Error when sending request to IPv8: ${res.body}`)
     }
 
     const json: string[][] = await res.json()
@@ -57,7 +59,7 @@ export class Ipv8AttestationClient {
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
     if (res.status < 200) {
-      throw new Error('Error when sending request to Ipv8')
+      throw new Error(`Error when sending request to IPv8: ${res.body}`)
     }
 
     const json: string[][] = await res.json()
@@ -77,7 +79,7 @@ export class Ipv8AttestationClient {
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
     if (res.status < 200) {
-      throw new Error('Error when sending request to Ipv8')
+      throw new Error(`Error when sending request to IPv8: ${res.body}`)
     }
 
     return res.json()
@@ -91,7 +93,7 @@ export class Ipv8AttestationClient {
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
 
     if (res.status < 200) {
-      throw new Error('Error when sending request to Ipv8')
+      throw new Error(`Error when sending request to IPv8: ${res.body}`)
     }
 
     return res.json()
@@ -116,7 +118,7 @@ export class Ipv8AttestationClient {
     const res = await fetch(`${this.baseUrl}/attestations` + urlParams, { method: 'POST' })
 
     if (res.status < 200) {
-      throw new Error('Error when sending request to Ipv8')
+      throw new Error(`Error when sending request to IPv8: ${res.body}`)
     }
 
     return res.json()

@@ -23,6 +23,29 @@ export interface VerificationOutput {
     };
 }
 
+export interface TrustchainBlock {
+    transaction: {
+        hash: string;
+        name: string;
+        data: number;
+        metadata: object;
+    };
+    type: string;
+    public_key: string;
+    sequence_number: number;
+    link_public_key: string;
+    link_sequence_number: number;
+    previous_hash: string;
+    timestamp: number;
+    insertTime: string;
+    hash: string;
+    linked: TrustchainBlock;
+}
+
+export interface TrustchainResponse {
+    blocks: TrustchainBlock[];
+}
+
 export type ApiResponse = SuccessRespone | ErrorResponse
 
 interface SuccessRespone {

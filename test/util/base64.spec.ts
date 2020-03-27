@@ -1,7 +1,7 @@
 import { expect } from 'chai'
 import { Base64Utils } from '../../src/utils/base64'
 
-describe('base64-util', () => {
+describe('util/base64.ts', () => {
   it('should encode a string into base64', () => {
     expect(Base64Utils.toBase64('discipl')).to.be.eq('ZGlzY2lwbA==')
   })

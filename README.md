@@ -1,19 +1,18 @@
 # discipl-core-ipv8
+Discipl Core Connector for [IPv8](https://github.com/Tribler/py-ipv8) network overlays
 
-Discipl Core Connector for IPV8 network overlays
-Implementation utilizing REST interface provided by local ipv8 service
-
-At this moment the only overlay that can be used through a REST interface implemented within the ipv8 project itself
-is the Attestation Community. While the first milestone for this connector is to utilize only this interface for now,
-the aim is to also support trustchain itself as it seems more in line with self sovereign identities having their
-channels (in trustchain: everyone has their own chain).
-
-## Attestations through IPV8
+## Attestations through IPv8
 For a example in how attestation works for IPv8 see `docs/example-attestation-flow.md`.
 
 ## Usage of DID and link
-ssid:discipl:ipv8:{url: "", mid: ""}
-link:discipl:ipv8:tmp:attribute_name
-link:discipl:ipv8:perm:trust-chain-hash
+The following implementations of a DID and link are used in the connector:
 
-{url:"",mid:""}
+```
+ssid:discipl:ipv8:{url: "", mid: ""} // base64 encoded
+link:discipl:ipv8:temp:attribute_name // base64 encoded
+link:discipl:ipv8:perm:trustchain-block-hash
+```
+
+### Temporary and permanent links
+When a new attestation is made a temporary link, indicated with `temp`, will be received. This temporary link has the attribute name in base64 encoding as reference. This makes it possible to use a JSON object as the attribute name. The reason for the existence of this temporary link is a limitation by IPv8. An attribute does not really exist in the trustchain until it is attested by another peer. Once the attribute is attested a permanent link, indicated with `perm`, will be received. This link has the hash of the trust chain block that attested the claim as reference.
+
