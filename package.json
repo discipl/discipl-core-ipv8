@@ -25,9 +25,10 @@
   "dependencies": {
     "@discipl/core-baseconnector": "0.2.2",
     "core-js": "3.6.4",
+    "isomorphic-fetch": "^2.2.1",
     "json-stable-stringify": "1.0.1",
     "loglevel": "1.6.7",
-    "node-fetch": "2.6.0",
+    "node-fetch": "^2.6.0",
     "node-forge": "0.9.1"
   },
   "devDependencies": {
@@ -42,7 +43,7 @@
     "@types/chai-as-promised": "7.1.2",
     "@types/json-stable-stringify": "1.0.32",
     "@types/mocha": "7.0.2",
-    "@types/node-fetch": "2.5.5",
+    "@types/node-fetch": "^2.5.5",
     "@types/node-forge": "0.9.2",
     "@typescript-eslint/eslint-plugin": "2.24.0",
     "@typescript-eslint/parser": "2.24.0",

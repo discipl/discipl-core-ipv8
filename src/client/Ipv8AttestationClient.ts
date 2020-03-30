@@ -1,5 +1,6 @@
-import fetch from 'node-fetch'
 import * as IPv8 from '../types/ipv8'
+import { Base64Utils } from '../utils/base64'
+import 'isomorphic-fetch'
 
 export class Ipv8AttestationClient {
   private baseUrl: string
@@ -20,10 +21,10 @@ export class Ipv8AttestationClient {
    */
   async getPeers (): Promise<string[]> {
     const urlParams = new URLSearchParams({ type: 'peers' })
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
-    if (res.status < 200) {
-      throw new Error(`Error when sending request to IPv8: ${res.body}`)
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     return res.json()
@@ -34,16 +35,16 @@ export class Ipv8AttestationClient {
    */
   async getOutstanding (): Promise<IPv8.OutstandingRequest[]> {
     const urlParams = new URLSearchParams({ type: 'outstanding' })
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
-    if (res.status < 200) {
-      throw new Error(`Error when sending request to IPv8: ${res.body}`)
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     const json: string[][] = await res.json()
     return json.map(request => ({
       peerMid: request[0],
-      name: request[1],
+      attributename: request[1],
       metadata: request[2]
     }))
   }
@@ -55,11 +56,16 @@ export class Ipv8AttestationClient {
    * @return All attributes of the current peer.
    */
   async getAttributes (mid: string = null): Promise<IPv8.Attribute[]> {
-    const urlParams = new URLSearchParams({ type: 'attributes', mid: mid })
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
+    const urlParams = new URLSearchParams({ type: 'attributes' })
 
-    if (res.status < 200) {
-      throw new Error(`Error when sending request to IPv8: ${res.body}`)
+    if (mid) {
+      urlParams.append('mid', mid)
+    }
+
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
+
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     const json: string[][] = await res.json()
@@ -76,10 +82,10 @@ export class Ipv8AttestationClient {
    */
   async getOutstandingVerify (): Promise<IPv8.OutstandingVerifyRequest> {
     const urlParams = new URLSearchParams({ type: 'outstanding_verify' })
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
-    if (res.status < 200) {
-      throw new Error(`Error when sending request to IPv8: ${res.body}`)
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     return res.json()
@@ -90,10 +96,10 @@ export class Ipv8AttestationClient {
    */
   async getVerificationOutput (): Promise<IPv8.VerificationOutput> {
     const urlParams = new URLSearchParams({ type: 'verification_output' })
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams)
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
-    if (res.status < 200) {
-      throw new Error(`Error when sending request to IPv8: ${res.body}`)
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     return res.json()
@@ -110,15 +116,15 @@ export class Ipv8AttestationClient {
     const urlParams = new URLSearchParams({
       type: 'request',
       mid: peerToAttest,
-      metadata: JSON.stringify(metadata),
+      metadata: Base64Utils.toBase64(JSON.stringify(metadata)),
       // eslint-disable-next-line @typescript-eslint/camelcase
       attribute_name: attributeName
     })
 
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams, { method: 'POST' })
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
-    if (res.status < 200) {
-      throw new Error(`Error when sending request to IPv8: ${res.body}`)
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     return res.json()
@@ -138,12 +144,12 @@ export class Ipv8AttestationClient {
       // eslint-disable-next-line @typescript-eslint/camelcase
       attribute_name: attributeName,
       // eslint-disable-next-line @typescript-eslint/camelcase
-      attribute_value: attributeValue
+      attribute_value: Base64Utils.toBase64(attributeValue)
     })
 
-    const res = await fetch(`${this.baseUrl}/attestations` + urlParams, { method: 'POST' })
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
-    if (res.status < 200) {
+    if (!res.ok) {
       throw new Error(`Error when attesting ${attributeName}: ${JSON.stringify(res.body)}`)
     }
 
