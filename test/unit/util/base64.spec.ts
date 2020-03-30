@@ -1,5 +1,5 @@
 import { expect } from 'chai'
-import { Base64Utils } from '../../src/utils/base64'
+import { Base64Utils } from '../../../src/utils/base64'
 
 describe('util/base64.ts', () => {
   it('should encode a string into base64', () => {

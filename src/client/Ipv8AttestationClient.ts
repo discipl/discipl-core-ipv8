@@ -1,6 +1,7 @@
 import * as IPv8 from '../types/ipv8'
 import { Base64Utils } from '../utils/base64'
 import 'isomorphic-fetch'
+import { Verification } from 'ipv8-connector'
 
 export class Ipv8AttestationClient {
   private baseUrl: string
@@ -44,7 +45,7 @@ export class Ipv8AttestationClient {
     const json: string[][] = await res.json()
     return json.map(request => ({
       peerMid: request[0],
-      attributename: request[1],
+      attributeName: request[1],
       metadata: request[2]
     }))
   }
@@ -78,11 +79,22 @@ export class Ipv8AttestationClient {
   }
 
   /**
-   * Get all outstanding requests for verification
+   * Ask a peer to verify if a given hash is corresponding to a given value
+   *
+   * @param peer Owner mid of the attribute to verify
+   * @param attributeHash Hash of the attribute to verify
+   * @param attributeValue Value to verify
    */
-  async getOutstandingVerify (): Promise<IPv8.OutstandingVerifyRequest> {
-    const urlParams = new URLSearchParams({ type: 'outstanding_verify' })
-    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
+  async verify (peer: string, attributeHash: string, attributeValue: string): Promise<IPv8.ApiResponse> {
+    const urlParams = new URLSearchParams({
+      type: 'verify',
+      mid: peer,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      attribute_hash: attributeHash,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      attribute_values: Base64Utils.toBase64(attributeValue)
+    })
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
     if (!res.ok) {
       throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
@@ -92,9 +104,49 @@ export class Ipv8AttestationClient {
   }
 
   /**
+   * Allow a given peer to verify the content of an attribute
+   *
+   * @param peer Peer that is allowed to verify the attribute value
+   * @param attributeName Attribute to allow verification for
+   */
+  async allowVerify (peer: string, attributeName: string): Promise<IPv8.ApiResponse> {
+    const urlParams = new URLSearchParams({
+      type: 'allow_verify',
+      mid: peer,
+      // eslint-disable-next-line @typescript-eslint/camelcase
+      attribute_name: attributeName
+    })
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
+
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
+    }
+
+    return res.json()
+  }
+
+  /**
+   * Get all outstanding requests for verification
+   */
+  async getOutstandingVerify (): Promise<IPv8.OutstandingVerifyRequest[]> {
+    const urlParams = new URLSearchParams({ type: 'outstanding_verify' })
+    const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
+
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
+    }
+
+    const json: string[][] = await res.json()
+    return json.map(r => ({
+      peerMid: r[0],
+      name: r[1]
+    }))
+  }
+
+  /**
    * Get the results of requested verifications
    */
-  async getVerificationOutput (): Promise<IPv8.VerificationOutput> {
+  async getVerificationOutput (): Promise<Verification[]> {
     const urlParams = new URLSearchParams({ type: 'verification_output' })
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
@@ -102,7 +154,18 @@ export class Ipv8AttestationClient {
       throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
-    return res.json()
+    const json: IPv8.VerificationOutput = await res.json()
+    const hashes = Object.keys(json)
+
+    return hashes.reduce((reduction, hash) => {
+      const verifications = json[hash].map(verification => ({
+        attributeHash: hash,
+        attributeValue: verification[0],
+        match: verification[1]
+      }))
+
+      return reduction.concat(verifications)
+    }, [])
   }
 
   /**

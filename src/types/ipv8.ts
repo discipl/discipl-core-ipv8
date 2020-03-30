@@ -7,7 +7,7 @@ export interface Attribute {
 
 export interface OutstandingRequest {
     peerMid: string;
-    name: string;
+    attributeName: string;
     metadata: string;
 }
 
@@ -17,10 +17,7 @@ export interface OutstandingVerifyRequest {
 }
 
 export interface VerificationOutput {
-    [key: string]: {
-        attributeValue: string;
-        match: number;
-    };
+    [key: string]: Array<Array<string|number>>;
 }
 
 export interface TrustchainBlock {
@@ -49,9 +46,9 @@ export interface TrustchainResponse {
 export type ApiResponse = SuccessRespone | ErrorResponse
 
 interface SuccessRespone {
-    'success': true;
+    success: true;
 }
 
 interface ErrorResponse {
-    'error': string;
+    error: string;
 }

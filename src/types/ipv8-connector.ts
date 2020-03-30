@@ -1,11 +1,11 @@
 export type ClaimData = { [key: string]: Claim } | Claim
 
-export type ClaimInfo = {
+export interface ClaimInfo {
     data: object;
     previous?: string;
 }
 
-export type Claim = {
+export interface Claim {
     attributeName: string;
     metadata: {
         attestorMid: string;
@@ -15,7 +15,13 @@ export type Claim = {
     };
 }
 
-export type Peer = {
+export type Verification = {
+    attributeHash: string;
+    attributeValue: string;
+    match: number;
+}
+
+export interface Peer {
     mid: string;
     // TODO It is possible to extract the public_key from the mid
     publicKey: string;

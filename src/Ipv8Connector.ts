@@ -132,13 +132,13 @@ export class Ipv8Connector extends BaseConnector {
 
     // Attribute names are base64 to avoid conflicts with colons when a object is given
     attributeName = Base64Utils.fromBase64(attributeName)
-    const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.name === attributeName)
+    const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === attributeName)
 
     if (!claim) {
       throw new Error(`Attestation request for "${attributeName}" could not be found`)
     }
 
-    await this.ipv8AttestationClient.attest(claim.name, attestationValue, claim.peerMid)
+    await this.ipv8AttestationClient.attest(claim.attributeName, attestationValue, claim.peerMid)
 
     return this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)
       .then(blocks => blocks.find(block => block.transaction.name === attributeName))
@@ -192,9 +192,26 @@ export class Ipv8Connector extends BaseConnector {
    *
    * @param link - Link to the claim
    * @param did - Did that wants access
-   */
+  //  */
   async get (link: string, did: string = null, privkey: string = null): Promise<Claim> {
     throw new Error('Method not implemented.')
+    //   const reference = BaseConnector.referenceFromLink(link)
+    //   const refSplit = reference?.split(this.LINK_DELIMITER)
+
+    //   if (reference === null || refSplit.length !== 2) {
+    //     throw new Error('Could not extract a valid reference from the given claim')
+    //   }
+
+    //   const indicator = refSplit[0]
+    //   if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
+    //     const attributeName = refSplit[1]
+    //     // return this.attestClaim(ssid, attributeName, attestationValue)
+    //   } else if (indicator === this.LINK_PERMANTENT_INDICATOR) {
+    //     const attributeHash = refSplit[1]
+    //     const claim = this.ipv8TrustchainClient.getBlocksForUser()
+    //   }
+
+    // throw new Error(`Unknown link indirector: ${indicator}`)
   }
 
   getDidOfClaim (link: string): Promise<string> {

@@ -20,6 +20,6 @@ export class Ipv8TrustchainClient {
       throw new Error(`Error when sending request to IPv8: ${res.body}`)
     }
 
-    return res.json()
+    return (await res.json()).blocks
   }
 }

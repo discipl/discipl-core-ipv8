@@ -1,9 +1,9 @@
-import { Ipv8Connector } from '../src/Ipv8Connector'
-import { Ipv8AttestationClient } from '../src/client/Ipv8AttestationClient'
+import { Ipv8Connector } from '../../src/Ipv8Connector'
+import { Ipv8AttestationClient } from '../../src/client/Ipv8AttestationClient'
 import sinon from 'sinon'
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
-import { Ipv8TrustchainClient } from '../src/client/Ipv8TrustchainClient'
+import { Ipv8TrustchainClient } from '../../src/client/Ipv8TrustchainClient'
 
 use(chaiAsPromised)
 
@@ -49,7 +49,7 @@ describe('Ipv8Connector.ts', () => {
     it('should be able to attest a claim that is not attested before', async () => {
       sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'attester_mid', publicKey: 'pubkey' })
       sinon.stub(attestationClient, 'requestAttestation').resolves()
-      sinon.stub(attestationClient, 'getOutstanding').resolves([{ name: JSON.stringify({ 'need': 'beer' }), peerMid: 'attribute_owner_mid', metadata: '' }])
+      sinon.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: JSON.stringify({ 'need': 'beer' }), peerMid: 'attribute_owner_mid', metadata: '' }])
 
       // TODO verify that the attributes of the peer that requested attestation are requested
       sinon.mock(attestationClient).expects('attest').once().withArgs(JSON.stringify({ 'need': 'beer' }), 'approve', 'attribute_owner_mid').resolves()

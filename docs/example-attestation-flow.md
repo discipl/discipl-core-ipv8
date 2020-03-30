@@ -75,6 +75,11 @@ P0hSobcH%2B%2BeiGT6Hhl6xqSN%2BKQ0%3D
 ### 1 - Bank asks for verification
 The bank asks the customer for prove of no debt.
 
+```
+http://localhost:14410/attestation?type=allow_verify&mid=P0hSobcH%2B%2BeiGT6Hhl6xqSN%2BKQ0%3D&attribute_name=i_have_no_debt
+```
+
+_This step must be taken in between 10 seconds of the last step_
 ```json
 // http://localhost:14412/attestation?type=verification_output
 
@@ -86,10 +91,6 @@ The bank asks the customer for prove of no debt.
         ]
     ]
 }
-```
-_This step must be taken in between 10 seconds of the last step_
-```
-http://localhost:14410/attestation?type=allow_verify&mid=P0hSobcH%2B%2BeiGT6Hhl6xqSN%2BKQ0%3D&attribute_name=i_have_no_debt
 ```
 
 ### Step 3 - Bank has verification
