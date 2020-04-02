@@ -23,7 +23,7 @@ declare module '@discipl/core-baseconnector' {
   }
 
   export interface Claim {
-    data: object;
+    data: any;
     previous: string;
   }
 }

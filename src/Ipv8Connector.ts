@@ -53,18 +53,22 @@ export class Ipv8Connector extends BaseConnector {
     try {
       return JSON.parse(Base64Utils.fromBase64(reference))
     } catch (e) {
-      throw Error(`Could not parse of decode DID: ${e}`)
+      throw Error(`Could not parse or decode DID: ${e.message}`)
     }
   }
 
   /**
-   * Returns a link to the last claim made by this did
+   * Returns a link to the last attested claim made by this did
    *
-   * @param did
+   * @param did Did to get the last claim for
    * @returns {Promise<string>} Link to the last claim made by this did
    */
   async getLatestClaim (did: string): Promise<string> {
-    throw new Error('Method not implemented.')
+    const peer = this.extractPeerFromDid(did)
+
+    return this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey)
+      .then(blocks => blocks.shift())
+      .then(lastBlock => this.linkFromReference(`perm:${lastBlock.hash}`))
   }
 
   /**
@@ -142,7 +146,6 @@ export class Ipv8Connector extends BaseConnector {
 
     return this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)
       .then(blocks => blocks.find(block => block.transaction.name === attributeName))
-      // TODO Confirm if the hash of block from the attester should be used or the attribute owners block
       .then(attribute => this.linkFromReference(`perm:${attribute.hash}`))
   }
 
@@ -156,17 +159,17 @@ export class Ipv8Connector extends BaseConnector {
   // FIXME Is it possible to store the previous claim into the metadata?
   async reattestClaim (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
-    const claim = (await this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)).find(blocks => blocks.hash === attributeHash)
+    const block = (await this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)).find(blocks => blocks.hash === attributeHash)
+    const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === block?.transaction.name)
 
     if (!claim) {
       throw new Error(`Attribute with hash "${attributeHash}" could not be found`)
     }
 
-    await this.ipv8AttestationClient.attest(claim.transaction.name, attestationValue, '')
+    await this.ipv8AttestationClient.attest(claim.attributeName, attestationValue, claim.peerMid)
 
     return this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)
       .then(blocks => blocks.find(block => block.hash === attributeHash))
-      // TODO Confirm if the hash of block from the attester should be used or the attribute owners block
       .then(attribute => this.linkFromReference(`perm:${attribute.hash}`))
   }
 
@@ -192,26 +195,39 @@ export class Ipv8Connector extends BaseConnector {
    *
    * @param link - Link to the claim
    * @param did - Did that wants access
-  //  */
+   * @param privkey - Key of the did requesting access
+   * @returns Object containing the data of the claim and a link to the claim before it.
+   */
   async get (link: string, did: string = null, privkey: string = null): Promise<Claim> {
-    throw new Error('Method not implemented.')
-    //   const reference = BaseConnector.referenceFromLink(link)
-    //   const refSplit = reference?.split(this.LINK_DELIMITER)
+    const peer = this.extractPeerFromDid(did)
+    const reference = BaseConnector.referenceFromLink(link)
+    const refSplit = reference?.split(this.LINK_DELIMITER)
 
-    //   if (reference === null || refSplit.length !== 2) {
-    //     throw new Error('Could not extract a valid reference from the given claim')
-    //   }
+    if (refSplit.length !== 2) {
+      throw new Error('Could not extract a valid reference from the given claim')
+    }
 
-    //   const indicator = refSplit[0]
-    //   if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
-    //     const attributeName = refSplit[1]
-    //     // return this.attestClaim(ssid, attributeName, attestationValue)
-    //   } else if (indicator === this.LINK_PERMANTENT_INDICATOR) {
-    //     const attributeHash = refSplit[1]
-    //     const claim = this.ipv8TrustchainClient.getBlocksForUser()
-    //   }
+    const indicator = refSplit[0]
+    if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
+      const attributeName = refSplit[1]
 
-    // throw new Error(`Unknown link indirector: ${indicator}`)
+      return {
+        data: Base64Utils.fromBase64(attributeName),
+        previous: null
+      }
+    }
+
+    if (indicator === this.LINK_PERMANTENT_INDICATOR) {
+      const attributeHash = refSplit[1]
+      const block = (await this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey)).find(block => block.hash === attributeHash)
+
+      return {
+        data: block.transaction.name,
+        previous: this.linkFromReference(`perm:${block.previous_hash}`)
+      }
+    }
+
+    throw new Error(`Unknown link indirector: ${indicator}`)
   }
 
   getDidOfClaim (link: string): Promise<string> {

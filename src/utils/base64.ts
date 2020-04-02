@@ -21,7 +21,7 @@ export class Base64Utils {
     try {
       return forge.util.decodeUtf8(forge.util.decode64(base64))
     } catch (e) {
-      throw new Error(`Error when decoding base64 string: ${e.message}`)
+      throw new Error(`Invalid base64, ${e.message}`)
     }
   }
 }

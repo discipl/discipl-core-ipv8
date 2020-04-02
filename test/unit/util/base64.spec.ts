@@ -17,4 +17,8 @@ describe('util/base64.ts', () => {
   it('should deencode unicode characters from base64', () => {
     expect(Base64Utils.fromBase64('z4DiiYg=')).to.be.eq('π≈')
   })
+
+  it('should throw a error when a non-base64 string is given', () => {
+    expect(() => Base64Utils.fromBase64('nope')).to.throw('Invalid base64, URI malformed')
+  })
 })
