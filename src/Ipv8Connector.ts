@@ -2,14 +2,18 @@
 import { BaseConnector, Ssid, Claim } from '@discipl/core-baseconnector'
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
-import { Peer } from 'ipv8-connector'
+import { Peer, Verification } from 'ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
+
+import forge from 'node-forge'
 
 export class Ipv8Connector extends BaseConnector {
   LINK_TEMPORARY_INIDACOTR = 'temp'
   LINK_PERMANTENT_INDICATOR = 'perm'
   LINK_DELIMITER = ':'
+  VERIFICATION_REQUEST_TIMEOUT_S = 10
+  VERIFICATION_REQUEST_RETRY_TIMEOUT_S = 1
   ipv8AttestationClient: Ipv8AttestationClient
   ipv8TrustchainClient: Ipv8TrustchainClient
 
@@ -191,6 +195,66 @@ export class Ipv8Connector extends BaseConnector {
   }
 
   /**
+   * Verif the attestation value of a claim
+   *
+   * @param link Link to the claim to verifiy
+   * @param did Did that is the owner of the claim to verify
+   * @param expectedValue The expected value with which the claim is attested
+   */
+  async verifyClaim (link: string, did: string, expectedValue: string): Promise<Verification> {
+    const peer = this.extractPeerFromDid(did)
+    const reference = BaseConnector.referenceFromLink(link)
+    const refSplit = reference?.split(this.LINK_DELIMITER)
+    const indicator = refSplit[0]
+
+    if (refSplit.length !== 2) {
+      throw new Error('Could not extract a valid reference from the given claim')
+    }
+
+    if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
+      throw new Error('Only a permanent link can be verified')
+    }
+
+    const blockHash = refSplit[1]
+    const blocks = await this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey)
+    const transactionHash = blocks.find(block => block.hash === blockHash).transaction.hash
+
+    // The transaction hash needs to be converted into a base64 ISO8859-1 encoded string
+    const attributeHash = forge.util.encode64(decodeURIComponent(escape(forge.util.encodeUtf8(transactionHash))))
+    // const attributeHash = forge.util.encode64(forge.util.encodeUtf8(blocks.find(block => block.hash === blockHash).transaction.hash))
+
+    await this.ipv8AttestationClient.verify(peer.mid, attributeHash, expectedValue)
+
+    return this.waitForVerificationResult(attributeHash)
+  }
+
+  /**
+   * Wait for the verification result of a attribute
+   *
+   * @param attributeHash Attribute hash to get  the verification result for
+   */
+  async waitForVerificationResult (attributeHash: string): Promise<Verification> {
+    // The timeout of a verification request specified by IPv8 is 10s
+    return new Promise((resolve, reject) => {
+      const interval = setInterval(async () => {
+        let retryCount = 0
+        const verifications = await this.ipv8AttestationClient.getVerificationOutput()
+        const verification = verifications.find(verification => verification.attributeHash === attributeHash)
+
+        if (!verification && retryCount <= this.VERIFICATION_REQUEST_TIMEOUT_S) {
+          retryCount++
+        } else if (!verification && retryCount > this.VERIFICATION_REQUEST_TIMEOUT_S) {
+          clearInterval(interval)
+          reject(new Error('No verification result received. The peer rejected the verification request or is offline'))
+        } else {
+          clearInterval(interval)
+          resolve(verification)
+        }
+      }, this.VERIFICATION_REQUEST_RETRY_TIMEOUT_S)
+    })
+  }
+
+  /**
    * Retrieve a claim by its link
    *
    * @param link - Link to the claim
@@ -202,12 +266,12 @@ export class Ipv8Connector extends BaseConnector {
     const peer = this.extractPeerFromDid(did)
     const reference = BaseConnector.referenceFromLink(link)
     const refSplit = reference?.split(this.LINK_DELIMITER)
+    const indicator = refSplit[0]
 
     if (refSplit.length !== 2) {
       throw new Error('Could not extract a valid reference from the given claim')
     }
 
-    const indicator = refSplit[0]
     if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
       const attributeName = refSplit[1]
 
