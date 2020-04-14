@@ -57,7 +57,7 @@ export class Ipv8Connector extends BaseConnector {
     try {
       return JSON.parse(Base64Utils.fromBase64(reference))
     } catch (e) {
-      throw Error(`Could not parse or decode DID: ${e.message}`)
+      throw new Error(`Could not parse or decode DID: ${e.message}`)
     }
   }
 
@@ -160,7 +160,6 @@ export class Ipv8Connector extends BaseConnector {
    * @param attributeHash Hash of the attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
-  // FIXME Is it possible to store the previous claim into the metadata?
   async reattestClaim (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
     const block = (await this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)).find(blocks => blocks.hash === attributeHash)

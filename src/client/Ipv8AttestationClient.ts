@@ -213,7 +213,7 @@ export class Ipv8AttestationClient {
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
     if (!res.ok) {
-      throw new Error(`Error when attesting ${attributeName}: ${JSON.stringify(res.body)}`)
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     return res.json()

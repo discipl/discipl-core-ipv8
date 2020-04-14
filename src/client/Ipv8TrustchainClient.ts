@@ -16,8 +16,8 @@ export class Ipv8TrustchainClient {
   async getBlocksForUser (publicKey: string): Promise<IPv8.TrustchainBlock[]> {
     const res = await fetch(`${this.baseUrl}/trustchain/users/${publicKey}/blocks`)
 
-    if (res.status < 200) {
-      throw new Error(`Error when sending request to IPv8: ${res.body}`)
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
     }
 
     return (await res.json()).blocks
