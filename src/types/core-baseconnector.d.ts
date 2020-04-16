@@ -4,7 +4,7 @@ declare module '@discipl/core-baseconnector' {
     abstract getDidOfClaim(link: string): Promise<string>
     abstract getLatestClaim(did: string): Promise<string>
     abstract newIdentity(): Promise<Ssid>
-    abstract claim(did: string, privkey: string, data: object): Promise<string>
+    abstract claim(did: string, privkey: string, data: object, atester?: string): Promise<string>
     abstract get(link: string, did: string, privkey: string): Promise<{ data: object; previous: string }>
 
     linkFromReference(claimReference: string): string

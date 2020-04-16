@@ -2,6 +2,7 @@ import * as IPv8 from '../types/ipv8'
 import { Base64Utils } from '../utils/base64'
 import 'isomorphic-fetch'
 import { Verification } from 'ipv8-connector'
+import stringify from 'json-stable-stringify'
 
 export class Ipv8AttestationClient {
   private baseUrl: string
@@ -179,7 +180,7 @@ export class Ipv8AttestationClient {
     const urlParams = new URLSearchParams({
       type: 'request',
       mid: peerToAttest,
-      metadata: Base64Utils.toBase64(JSON.stringify(metadata)),
+      metadata: Base64Utils.toBase64(stringify(metadata)),
       // eslint-disable-next-line @typescript-eslint/camelcase
       attribute_name: attributeName
     })

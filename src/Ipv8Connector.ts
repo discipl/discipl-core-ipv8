@@ -39,6 +39,7 @@ export class Ipv8Connector extends BaseConnector {
    */
   configure (serverEndpoint: string): void {
     this.ipv8AttestationClient = new Ipv8AttestationClient(serverEndpoint)
+    this.ipv8TrustchainClient = new Ipv8TrustchainClient(serverEndpoint)
   }
 
   /**
@@ -53,6 +54,10 @@ export class Ipv8Connector extends BaseConnector {
    */
   extractPeerFromDid (did: string): Peer {
     const reference = BaseConnector.referenceFromDid(did)
+
+    if (reference === null) {
+      throw new Error('The given string is not a valid DID')
+    }
 
     try {
       return JSON.parse(Base64Utils.fromBase64(reference))
@@ -95,9 +100,10 @@ export class Ipv8Connector extends BaseConnector {
    * @param privkey - Private key to sign the claim
    * @param claim - Made claim. This is the claim itself (that can be any object) of a attestation. A attestation is a object
    * with a single key that represents the attestation and a value that holds the actual claim.
+   * @param attester - Identity that is expected to attest te claim
    * @return Link to the maide claim or attestation.
    */
-  async claim (ssid: string, privkey: string, claim: object): Promise<string> {
+  async claim (ssid: string, privkey: string, claim: object, attester: string): Promise<string> {
     const objectKeys = Object.keys(claim)
     const objectValues = Object.values(claim)
 
@@ -124,7 +130,7 @@ export class Ipv8Connector extends BaseConnector {
       throw new Error(`Unknown link indirector: ${indicator}`)
     }
 
-    return this.newClaim(ssid, claim)
+    return this.newClaim(ssid, attester, claim)
   }
 
   /**
@@ -132,14 +138,11 @@ export class Ipv8Connector extends BaseConnector {
    * new attestation request that is in the outgoing queue.
    *
    * @param ssid Peer that attests the attribute
-   * @param attributeName Attribute to attest
+   * @param attributeName Base64 encoded attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
   async attestClaim (ssid: string, attributeName: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
-
-    // Attribute names are base64 to avoid conflicts with colons when a object is given
-    attributeName = Base64Utils.fromBase64(attributeName)
     const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === attributeName)
 
     if (!claim) {
@@ -180,11 +183,12 @@ export class Ipv8Connector extends BaseConnector {
    * Express a new claim for a given identity
    *
    * @param ssid Identity that express the claim
+   * @param attester Identit that is expected to attest the claim
    * @param data Data that is claimed
    * @return Temporary link to the made claim
    */
-  async newClaim (ssid: string, data: object|string): Promise<string> {
-    const peer = this.extractPeerFromDid(ssid)
+  async newClaim (ssid: string, attester: string, data: object|string): Promise<string> {
+    const peer = this.extractPeerFromDid(attester)
 
     // Attribute names are base64 to avoid conflicts with colons when a object is given
     const stringData = Base64Utils.toBase64(stringify(data))

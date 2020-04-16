@@ -5,6 +5,8 @@ import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Ipv8TrustchainClient } from '../../src/client/Ipv8TrustchainClient'
 import { TrustchainBlock } from 'ipv8'
+import stringify from 'json-stable-stringify'
+import { Base64Utils } from '../../src/utils/base64'
 
 use(chaiAsPromised)
 
@@ -33,6 +35,10 @@ describe('Ipv8Connector.ts', function () {
     expect(peer.publicKey).to.eq('4c69624e61434c504b3abf517cb0012177e1267c2b802b5efa3948ead2ec61b26cbffc07d362c79edf1b2e7923d380b872613cd7d890dd86a14b069479c6f7bdde166fd9acf8b9c74a95')
   })
 
+  it('should throw a error when another string than a DID is given', function () {
+    expect(() => connector.extractPeerFromDid('nope')).to.throw('The given string is not a valid DID')
+  })
+
   it('should throw a error when invalid JSON is present in a did', function () {
     expect(() => connector.extractPeerFromDid('did:discipl:ipv8:nope')).to.throw('Could not parse or decode DID: Invalid base64, URI malformed')
   })
@@ -48,31 +54,30 @@ describe('Ipv8Connector.ts', function () {
       sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'base64mid', publicKey: 'pubkey' })
       sinon.mock(attestationClient).expects('requestAttestation').once().withArgs('eyJuZWVkIjoiYmVlciJ9', 'base64mid')
 
-      const link = await connector.claim('test', 'irrelevant', { 'need': 'beer' })
+      const link = await connector.claim('owner_mid', 'irrelevant', { 'need': 'beer' }, 'attester_mid')
 
       expect(link).to.eq('link:discipl:ipv8:temp:eyJuZWVkIjoiYmVlciJ9')
     })
 
     it('should be able to attest a claim that is not attested before', async function () {
+      const attributeName = Base64Utils.toBase64(stringify({ 'need': 'beer' }))
       sinon.stub(attestationClient, 'requestAttestation').resolves()
-      sinon.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: JSON.stringify({ 'need': 'beer' }), peerMid: 'attribute_owner_mid', metadata: '' }])
+      sinon.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: attributeName, peerMid: 'attribute_owner_mid', metadata: '' }])
+      sinon.mock(attestationClient).expects('attest').once().withArgs(attributeName, 'approve', 'attribute_owner_mid').resolves()
+      sinon.mock(trustchainClient).expects('getBlocksForUser').once().withArgs('pubkey').resolves([{ transaction: { name: attributeName }, hash: '1234' }])
 
-      // TODO verify that the attributes of the peer that requested attestation are requested
-      sinon.mock(attestationClient).expects('attest').once().withArgs(JSON.stringify({ 'need': 'beer' }), 'approve', 'attribute_owner_mid').resolves()
-      sinon.mock(trustchainClient).expects('getBlocksForUser').once().withArgs('pubkey').resolves([{ transaction: { name: JSON.stringify({ 'need': 'beer' }) }, hash: '1234' }])
-
-      const link = await connector.claim('attribute_owner_mid', 'irrelevant', { 'need': 'beer' })
-      const attestLink = await connector.claim('attester_mid', 'irrelevant', { 'approve': link })
+      const link = await connector.claim('attribute_owner_mid', 'irrelevant', { 'need': 'beer' }, 'attester_mid')
+      const attestLink = await connector.claim('attester_mid', 'irrelevant', { 'approve': link }, 'attester_mid')
 
       expect(attestLink).to.eq('link:discipl:ipv8:perm:1234')
     })
 
     it('should be able to reattest a existing claim', async function () {
-      sinon.mock(attestationClient).expects('getOutstanding').once().resolves([{ attributeName: JSON.stringify({ 'need': 'beer' }), peerMid: 'ownerMid', hash: 'abcde' }])
-      sinon.mock(trustchainClient).expects('getBlocksForUser').twice().withArgs('pubkey').resolves([{ transaction: { name: JSON.stringify({ 'need': 'beer' }) }, hash: '1234' }])
-      sinon.mock(attestationClient).expects('attest').once().withArgs(JSON.stringify({ 'need': 'beer' }), 'extra_approve', 'ownerMid')
+      sinon.mock(attestationClient).expects('getOutstanding').once().resolves([{ attributeName: stringify({ 'need': 'beer' }), peerMid: 'ownerMid', hash: 'abcde' }])
+      sinon.mock(trustchainClient).expects('getBlocksForUser').twice().withArgs('pubkey').resolves([{ transaction: { name: stringify({ 'need': 'beer' }) }, hash: '1234' }])
+      sinon.mock(attestationClient).expects('attest').once().withArgs(stringify({ 'need': 'beer' }), 'extra_approve', 'ownerMid')
 
-      const attestLink = await connector.claim('', 'irrelevant', { 'extra_approve': 'link:discipl:ipv8:perm:1234' })
+      const attestLink = await connector.claim('owner_mid', 'irrelevant', { 'extra_approve': 'link:discipl:ipv8:perm:1234' }, 'attester_mid')
 
       expect(attestLink).to.eq('link:discipl:ipv8:perm:1234')
     })
@@ -80,7 +85,7 @@ describe('Ipv8Connector.ts', function () {
     it('should not be able to attest a none existing claim', function () {
       sinon.stub(attestationClient, 'getOutstanding').resolves([])
 
-      expect(connector.attestClaim('', 'Y2xhaW0=', 'approve')).to.be.rejectedWith('Attestation request for "claim" could not be found')
+      expect(connector.attestClaim('', 'Y2xhaW0=', 'approve')).to.be.rejectedWith('Attestation request for "Y2xhaW0=" could not be found')
     })
 
     it('should not be able to reattest a none existing claim', function () {
@@ -101,7 +106,7 @@ describe('Ipv8Connector.ts', function () {
         it(link.description, () => {
           const invalidLink = link.input
 
-          expect(connector.claim('', 'approved', invalidLink)).to.be.rejectedWith(link.error)
+          expect(connector.claim('owner_mid', 'approved', invalidLink, 'attester_mid')).to.be.rejectedWith(link.error)
         })
       })
     })
