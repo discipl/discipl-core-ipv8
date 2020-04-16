@@ -198,24 +198,35 @@ export class Ipv8Connector extends BaseConnector {
   }
 
   /**
-   * Verif the attestation value of a claim
+   * Verifies existence of a claim with the given data in the channel of the given did
    *
-   * @param link Link to the claim to verifiy
-   * @param did Did that is the owner of the claim to verify
-   * @param expectedValue The expected value with which the claim is attested
+   * @param {string} attestorDid The did that claimed the data
+   * @param {object} attestation Data that needs to be verified in the format of {@code {'value': 'link'}}
+   * @param {string} verifierDid Did that wants to verify (used for access management)
+   * @param {string} verifierPrivkey Private key of the verifier
+   * @returns {Promise<string>} Link to claim that proves this data, null if such a claim does not exist
    */
-  async verifyClaim (link: string, did: string, expectedValue: string): Promise<Verification> {
-    const peer = this.extractPeerFromDid(did)
+  async verify (attestorDid: string, attestation: object, verifierDid: string, verifierPrivkey: string = null): Promise<string> {
+    const attestationKeys = Object.keys(attestation)
+    const attestationValues = Object.values(attestation)
+
+    if (attestationKeys.length !== 1 || !BaseConnector.isLink(attestationValues[0])) {
+      throw new Error(`Unexpected attestation object: ${stringify(attestation)}`)
+    }
+
+    const attestationValue = attestationKeys.pop()
+    const link = attestationValues.pop()
+    const peer = this.extractPeerFromDid(attestorDid)
     const reference = BaseConnector.referenceFromLink(link)
     const refSplit = reference?.split(this.LINK_DELIMITER)
     const indicator = refSplit[0]
 
     if (refSplit.length !== 2) {
-      throw new Error('Could not extract a valid reference from the given claim')
+      throw new Error('Could not extract a valid reference from the given link')
     }
 
     if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
-      throw new Error('Only a permanent link can be verified')
+      throw new Error('Only an attestation refering to a permanent link can be verified')
     }
 
     const blockHash = refSplit[1]
@@ -224,11 +235,10 @@ export class Ipv8Connector extends BaseConnector {
 
     // The transaction hash needs to be converted into a base64 ISO8859-1 encoded string
     const attributeHash = forge.util.encode64(decodeURIComponent(escape(forge.util.encodeUtf8(transactionHash))))
-    // const attributeHash = forge.util.encode64(forge.util.encodeUtf8(blocks.find(block => block.hash === blockHash).transaction.hash))
 
-    await this.ipv8AttestationClient.verify(peer.mid, attributeHash, expectedValue)
+    await this.ipv8AttestationClient.verify(peer.mid, attributeHash, Base64Utils.toBase64(attestationValue))
 
-    return this.waitForVerificationResult(attributeHash)
+    return (await this.waitForVerificationResult(attributeHash)).match > 0.9 ? link : null
   }
 
   /**
