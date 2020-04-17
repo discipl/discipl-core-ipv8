@@ -22,4 +22,14 @@ export class Ipv8TrustchainClient {
 
     return (await res.json()).blocks
   }
+
+  async getBlock (blockHash: string): Promise<IPv8.TrustchainBlock> {
+    const res = await fetch(`${this.baseUrl}/trustchain/blocks/${blockHash}`)
+
+    if (!res.ok) {
+      throw new Error(`Error when sending request to IPv8: ${await res.text()}`)
+    }
+
+    return (await res.json()).block
+  }
 }

@@ -129,7 +129,7 @@ describe('Ipv8Connector.ts', function () {
 
     it('should get a calim by a given link', async function () {
       // eslint-disable-next-line @typescript-eslint/camelcase
-      sinon.stub(trustchainClient, 'getBlocksForUser').resolves([{ hash: 'abcde', previous_hash: 'abcde_prev_hash', transaction: { name: 'my_attribute' } }, { hash: 'fghi', previous_hash: 'fghi_prev' }] as TrustchainBlock[])
+      sinon.stub(trustchainClient, 'getBlock').resolves({ hash: 'abcde', previous_hash: 'abcde_prev_hash', transaction: { name: 'my_attribute' } } as TrustchainBlock)
 
       const link = 'link:discipl:ipv8:perm:abcde'
       const claim = await connector.get(link)
@@ -144,6 +144,18 @@ describe('Ipv8Connector.ts', function () {
 
       expect(claim.previous).to.eq(null)
       expect(claim.data).to.eq("{'some':'object'}")
+    })
+
+    it('should throw a error when a invalid link is given', function () {
+      expect(connector.get('link:discipl:ipv8:eydzb21lJzonb2JqZWN0J30='))
+        .to.eventually.be.rejected
+        .and.to.be.and.instanceOf(Error)
+        .and.have.property('message', 'Could not extract a valid reference from the given claim')
+
+      expect(connector.get('link:discipl:ipv8:invalid:eydzb21lJzonb2JqZWN0J30='))
+        .to.eventually.be.rejected
+        .and.to.be.and.instanceOf(Error)
+        .and.have.property('message', 'Unknown link indirector: invalid')
     })
 
     it('should wait for the verification resutl to be available', async function () {
@@ -169,7 +181,7 @@ describe('Ipv8Connector.ts', function () {
     it('should be able to verify a claim', async function () {
       sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'attestor_mid', publicKey: '' })
       sinon.stub(trustchainClient, 'getBlocksForUser').resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' } }, { hash: 'fghi' }] as TrustchainBlock[])
-      sinon.mock(attestationClient).expects('verify').once().withArgs('attestor_mid', 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', 'approve')
+      sinon.mock(attestationClient).expects('verify').once().withArgs('attestor_mid', 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', 'YXBwcm92ZQ==')
       sinon.stub(connector, 'waitForVerificationResult').resolves({ attributeHash: 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', attributeValue: 'approve', match: 0.99 })
 
       connector.verify('attestor_did', { 'approve': 'link:discipl:ipv8:perm:abcde' }, 'verified_did')

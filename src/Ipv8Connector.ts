@@ -276,7 +276,6 @@ export class Ipv8Connector extends BaseConnector {
    * @returns Object containing the data of the claim and a link to the claim before it.
    */
   async get (link: string, did: string = null, privkey: string = null): Promise<Claim> {
-    const peer = this.extractPeerFromDid(did)
     const reference = BaseConnector.referenceFromLink(link)
     const refSplit = reference?.split(this.LINK_DELIMITER)
     const indicator = refSplit[0]
@@ -295,8 +294,8 @@ export class Ipv8Connector extends BaseConnector {
     }
 
     if (indicator === this.LINK_PERMANTENT_INDICATOR) {
-      const attributeHash = refSplit[1]
-      const block = (await this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey)).find(block => block.hash === attributeHash)
+      const blockHash = refSplit[1]
+      const block = (await this.ipv8TrustchainClient.getBlock(blockHash))
 
       return {
         data: block.transaction.name,

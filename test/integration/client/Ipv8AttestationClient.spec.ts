@@ -5,18 +5,13 @@ import { Ipv8DockerUtil } from '../util/ipv8docker'
 describe('Ipv8AttestationClient.ts', function () {
   this.beforeAll(function (done) {
     this.timeout(60000)
-    Ipv8DockerUtil.startIpv8Container().then(() => done())
+    Ipv8DockerUtil.startIpv8Container()
+      .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(done))
   })
 
   this.afterAll(function (done) {
     this.timeout(20000)
     Ipv8DockerUtil.killIpv8Container().then(() => done())
-  })
-
-  // Wait for the IPv8 instance to be active and ready to use
-  before(function (done) {
-    this.timeout(20000)
-    Ipv8DockerUtil.waitForContainersToBeReady().then(() => done())
   })
 
   const peers = {
