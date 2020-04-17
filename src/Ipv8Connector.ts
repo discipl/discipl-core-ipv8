@@ -14,6 +14,7 @@ export class Ipv8Connector extends BaseConnector {
   LINK_DELIMITER = ':'
   VERIFICATION_REQUEST_TIMEOUT_S = 10
   VERIFICATION_REQUEST_RETRY_TIMEOUT_S = 1
+  VERIFICATION_MINIMAl_MATCH = 0.99;
   ipv8AttestationClient: Ipv8AttestationClient
   ipv8TrustchainClient: Ipv8TrustchainClient
 
@@ -236,9 +237,9 @@ export class Ipv8Connector extends BaseConnector {
     // The transaction hash needs to be converted into a base64 ISO8859-1 encoded string
     const attributeHash = forge.util.encode64(decodeURIComponent(escape(forge.util.encodeUtf8(transactionHash))))
 
-    await this.ipv8AttestationClient.verify(peer.mid, attributeHash, Base64Utils.toBase64(attestationValue))
+    await this.ipv8AttestationClient.verify(peer.mid, attributeHash, attestationValue)
 
-    return (await this.waitForVerificationResult(attributeHash)).match > 0.9 ? link : null
+    return (await this.waitForVerificationResult(attributeHash)).match > this.VERIFICATION_MINIMAl_MATCH ? link : null
   }
 
   /**
@@ -259,11 +260,13 @@ export class Ipv8Connector extends BaseConnector {
         } else if (!verification && retryCount > this.VERIFICATION_REQUEST_TIMEOUT_S) {
           clearInterval(interval)
           reject(new Error('No verification result received. The peer rejected the verification request or is offline'))
+        } else if (verification && verification.match < this.VERIFICATION_MINIMAl_MATCH) {
+          retryCount++
         } else {
           clearInterval(interval)
           resolve(verification)
         }
-      }, this.VERIFICATION_REQUEST_RETRY_TIMEOUT_S)
+      }, this.VERIFICATION_REQUEST_RETRY_TIMEOUT_S * 1000)
     })
   }
 

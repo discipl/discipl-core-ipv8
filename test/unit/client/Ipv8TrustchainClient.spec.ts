@@ -12,7 +12,7 @@ describe('Ipv8TrustchainClient.ts', function () {
   })
 
   describe('#getBlocksForUser', function () {
-    it('should throw a error when the request failed', function () {
+    it('should throw an error when the request fails', function () {
       globalWithFetch.fetch = sinon.mock().resolves({ ok: false, text: () => 'Not found' })
 
       expect(trustchainClient.getBlocksForUser('')).to.rejectedWith('Error when sending request to IPv8: Not found')

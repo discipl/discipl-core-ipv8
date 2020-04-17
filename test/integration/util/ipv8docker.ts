@@ -16,7 +16,7 @@ export class Ipv8DockerUtil {
                 resolve()
               }
             })
-        }, 2000)
+        }, 1000)
       })
     }
 

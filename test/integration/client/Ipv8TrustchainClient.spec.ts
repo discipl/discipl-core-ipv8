@@ -4,13 +4,12 @@ import { expect } from 'chai'
 
 describe('Ipv8TrustchainClient.ts', function () {
   this.beforeAll(function (done) {
-    this.timeout(60000)
+    this.timeout(30000)
     Ipv8DockerUtil.startIpv8Container()
-      .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(done))
+      .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(() => done()))
   })
 
   this.afterAll(function (done) {
-    this.timeout(20000)
     Ipv8DockerUtil.killIpv8Container().then(() => done())
   })
 
@@ -27,7 +26,7 @@ describe('Ipv8TrustchainClient.ts', function () {
     expect(res.pop().hash).to.eq('862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f')
   })
 
-  it('should get the specifiek block from the trustchain', async function () {
+  it('should get the specified block from the trustchain', async function () {
     const res = await trustchainClient.getBlock('862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f')
 
     expect(res.hash).to.eq('862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f')

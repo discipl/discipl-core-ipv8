@@ -4,13 +4,12 @@ import { Ipv8DockerUtil } from '../util/ipv8docker'
 
 describe('Ipv8AttestationClient.ts', function () {
   this.beforeAll(function (done) {
-    this.timeout(60000)
+    this.timeout(30000)
     Ipv8DockerUtil.startIpv8Container()
-      .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(done))
+      .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(() => done()))
   })
 
   this.afterAll(function (done) {
-    this.timeout(20000)
     Ipv8DockerUtil.killIpv8Container().then(() => done())
   })
 
@@ -75,7 +74,7 @@ describe('Ipv8AttestationClient.ts', function () {
       }], 'unexpected verification outcome'))
   })
 
-  it('should be able to request and attest a attribute', async function () {
+  it('should be able to request and attest an attribute', async function () {
     this.slow(1000)
     const employeeAttestationClient = new Ipv8AttestationClient(peers.employee.url)
     await employeeAttestationClient.requestAttestation('time_for_coffee', peers.employer.mid)

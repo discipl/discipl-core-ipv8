@@ -35,11 +35,11 @@ describe('Ipv8Connector.ts', function () {
     expect(peer.publicKey).to.eq('4c69624e61434c504b3abf517cb0012177e1267c2b802b5efa3948ead2ec61b26cbffc07d362c79edf1b2e7923d380b872613cd7d890dd86a14b069479c6f7bdde166fd9acf8b9c74a95')
   })
 
-  it('should throw a error when another string than a DID is given', function () {
+  it('should throw an error when another string than a DID is given', function () {
     expect(() => connector.extractPeerFromDid('nope')).to.throw('The given string is not a valid DID')
   })
 
-  it('should throw a error when invalid JSON is present in a did', function () {
+  it('should throw an error when invalid JSON is present in a did', function () {
     expect(() => connector.extractPeerFromDid('did:discipl:ipv8:nope')).to.throw('Could not parse or decode DID: Invalid base64, URI malformed')
   })
 
@@ -59,7 +59,7 @@ describe('Ipv8Connector.ts', function () {
       expect(link).to.eq('link:discipl:ipv8:temp:eyJuZWVkIjoiYmVlciJ9')
     })
 
-    it('should be able to attest a claim that is not attested before', async function () {
+    it('should be able to attest a claim that has not been attested before', async function () {
       const attributeName = Base64Utils.toBase64(stringify({ 'need': 'beer' }))
       sinon.stub(attestationClient, 'requestAttestation').resolves()
       sinon.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: attributeName, peerMid: 'attribute_owner_mid', metadata: '' }])
@@ -101,7 +101,7 @@ describe('Ipv8Connector.ts', function () {
         .and.have.property('message', 'Attribute with hash "1234" could not be found')
     })
 
-    describe('should give a error when a invalid link is given', async function () {
+    describe('should give an error when a invalid link is given', async function () {
       const invalidLinks = [
         { input: { 'attest': 'link:discipl:ipv8:reference' }, description: 'Without a indicator', error: 'Could not extract a valid reference from the given claim' },
         { input: { 'attest': 'link:discipl:ipv8:perm:1234:second' }, description: 'Too long reference', error: 'Could not extract a valid reference from the given claim' },
@@ -146,7 +146,7 @@ describe('Ipv8Connector.ts', function () {
       expect(claim.data).to.eq("{'some':'object'}")
     })
 
-    it('should throw a error when a invalid link is given', function () {
+    it('should throw an error when a invalid link is given', function () {
       expect(connector.get('link:discipl:ipv8:eydzb21lJzonb2JqZWN0J30='))
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
@@ -158,7 +158,7 @@ describe('Ipv8Connector.ts', function () {
         .and.have.property('message', 'Unknown link indirector: invalid')
     })
 
-    it('should wait for the verification resutl to be available', async function () {
+    it('should wait for the verification result to be available', async function () {
       connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_S = 0.1
       sinon.stub(attestationClient, 'getVerificationOutput').resolves([{ attributeHash: 'abcde', attributeValue: 'approve', match: 100 }, { attributeHash: 'fghi', attributeValue: 'nope', match: 0 }])
       const result = await connector.waitForVerificationResult('abcde')
@@ -166,7 +166,7 @@ describe('Ipv8Connector.ts', function () {
       expect(result).to.deep.eq({ attributeHash: 'abcde', attributeValue: 'approve', match: 100 })
     })
 
-    it('should retry to get verification result if no result is available yet', async function () {
+    it('should retry to get the verification result if no result is available yet', async function () {
       connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_S = 0.1
       sinon.stub(attestationClient, 'getVerificationOutput')
         .onFirstCall().resolves([{ attributeHash: 'fghi', attributeValue: 'nope', match: 0 }])
@@ -181,20 +181,20 @@ describe('Ipv8Connector.ts', function () {
     it('should be able to verify a claim', async function () {
       sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'attestor_mid', publicKey: '' })
       sinon.stub(trustchainClient, 'getBlocksForUser').resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' } }, { hash: 'fghi' }] as TrustchainBlock[])
-      sinon.mock(attestationClient).expects('verify').once().withArgs('attestor_mid', 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', 'YXBwcm92ZQ==')
+      sinon.mock(attestationClient).expects('verify').once().withArgs('attestor_mid', 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', 'approve')
       sinon.stub(connector, 'waitForVerificationResult').resolves({ attributeHash: 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', attributeValue: 'approve', match: 0.99 })
 
       connector.verify('attestor_did', { 'approve': 'link:discipl:ipv8:perm:abcde' }, 'verified_did')
     })
 
-    it('should throw a error when a invalid attestation is given', function () {
+    it('should throw an error when an invalid attestation is given', function () {
       expect(connector.verify('attestor_id', {}, 'verifier_did'))
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
         .and.have.property('message', 'Unexpected attestation object: {}')
     })
 
-    it('should throw a error when a invalid link is given', function () {
+    it('should throw an error when a invalid link is given', function () {
       sinon.stub(connector, 'extractPeerFromDid').returns({ mid: '', publicKey: '' })
 
       expect(connector.verify('did:discipl:ipv8:1', { 'attestaion': 'link:discipl:ipv8:invalid' }, 'verifier_did'))
