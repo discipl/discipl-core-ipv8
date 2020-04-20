@@ -1,1 +1,2 @@
 src/types/*.d.ts
+dist/**/*.js

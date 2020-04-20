@@ -4,7 +4,7 @@ import sinon from 'sinon'
 import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Ipv8TrustchainClient } from '../../src/client/Ipv8TrustchainClient'
-import { TrustchainBlock } from 'ipv8'
+import { TrustchainBlock } from '../../src/types/ipv8'
 import stringify from 'json-stable-stringify'
 import { Base64Utils } from '../../src/utils/base64'
 

@@ -1,7 +1,7 @@
 import * as IPv8 from '../types/ipv8'
 import { Base64Utils } from '../utils/base64'
 import 'isomorphic-fetch'
-import { Verification } from 'ipv8-connector'
+import { Verification } from '../types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 
 export class Ipv8AttestationClient {

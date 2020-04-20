@@ -1,8 +1,7 @@
-/// <reference path="./types/core-baseconnector.d.ts"/>
 import { BaseConnector, Ssid, Claim } from '@discipl/core-baseconnector'
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
-import { Peer, Verification } from 'ipv8-connector'
+import { Peer, Verification } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
 

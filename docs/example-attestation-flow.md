@@ -51,7 +51,7 @@ GET http://localhost:14410/attestation?type=attributes
     [
         "i_have_no_debt", // attribute
         "hdi3G02DnQyIHSswGNEgB6ciBTA=", // hash
-        {},
+        {}, // metadata
         "0Jwy2oSmkJFmR22MexNzZW7bSus=" // attestor
     ]
 ]
@@ -74,23 +74,16 @@ P0hSobcH%2B%2BeiGT6Hhl6xqSN%2BKQ0%3D
 
 ### 1 - Bank asks for verification
 The bank asks the customer for prove of no debt.
+```
+http://localhost:14410/attestation?type=verify&mid=t2l%2BESHvaYsz8psxv5u%2BGpBA9e0%3D&attribute_hash=hdi3G02DnQyIHSswGNEgB6ciBTA%3D&attribute_value=YXBwcm92ZWQ%3D
+```
 
+### Step 2 - 
+_This step must be taken in between 10 seconds of the last step_
+
+The customer allows the bank to verify the content of _i_have_no_debt_ claim.
 ```
 http://localhost:14410/attestation?type=allow_verify&mid=P0hSobcH%2B%2BeiGT6Hhl6xqSN%2BKQ0%3D&attribute_name=i_have_no_debt
-```
-
-_This step must be taken in between 10 seconds of the last step_
-```json
-// http://localhost:14412/attestation?type=verification_output
-
-{
-    "5Sg2iYByO+cwUhB370coTmcR36Y=": [
-        [
-            "YXBwcm92ZWQ=",
-            0.9999847412109375
-        ]
-    ]
-}
 ```
 
 ### Step 3 - Bank has verification

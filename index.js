@@ -1,3 +1,3 @@
-import Ipv8Connector from './Ipv8Connector'
+import Ipv8Connector from './dist/Ipv8Connector'
 
 export default Ipv8Connector

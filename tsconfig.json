@@ -1,26 +1,19 @@
 {
     "compilerOptions": {
         "module": "commonjs",
+        "target": "es5",
         "esModuleInterop": true,
         "allowSyntheticDefaultImports": true,
-        "target": "es5",
         "noImplicitAny": true,
         "moduleResolution": "node",
         "sourceMap": true,
+        "declaration": true,
         "outDir": "dist",
-        "baseUrl": ".",
-        "paths": {
-            "*": [
-                "node_modules/*",
-                "src/types/*"
-            ]
-        },
         "types": [
             "mocha"
         ]
     },
     "include": [
-        "src/**/*",
-        "test"
+        "src/**/*"
     ]
 }
