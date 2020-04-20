@@ -4,7 +4,7 @@ import { expect } from 'chai'
 
 describe('Ipv8TrustchainClient.ts', function () {
   this.beforeAll(function (done) {
-    this.timeout(30000)
+    this.timeout(60000)
     Ipv8DockerUtil.startIpv8Container()
       .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(() => done()))
   })
