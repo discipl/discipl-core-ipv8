@@ -1,14 +1,23 @@
 language: node_js
+
+service:
+  - docker
+
 node_js:
   - "lts/*"
+
 addons:
   sonarcloud:
-    organization: "discipl" # the key of the org you chose at step #3
+    organization: "discipl"
+
+before_install:
+  - docker pull python:3.7-buster
+  - docker build ./test/integration/ipv8 -t ipv8:latest
+
 script:
   - npm run lint
+  - npm run test:coverage
   - npm audit
-  - npm test:coverage
-  # other script steps might be done before running the actual analysis
 
 after_success:
   - 'if [ ! -z "$SONAR_TOKEN" ]; then sonar-scanner; fi'

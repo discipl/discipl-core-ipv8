@@ -16,6 +16,7 @@ export class Ipv8DockerUtil {
                 resolve()
               }
             })
+            .catch(() => undefined)
         }, 1000)
       })
     }
