@@ -1,0 +1,23 @@
+language: node_js
+
+service:
+  - docker
+
+node_js:
+  - "lts/*"
+
+addons:
+  sonarcloud:
+    organization: "discipl"
+
+before_install:
+  - docker pull python:3.7-buster
+  - docker build ./test/integration/ipv8 -t ipv8:latest
+
+script:
+  - npm run lint
+  - npm run test:coverage
+  - npm audit
+
+after_success:
+  - 'if [ ! -z "$SONAR_TOKEN" ]; then sonar-scanner; fi'

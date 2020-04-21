@@ -1,0 +1,7 @@
+{
+    "extension": [
+        "ts"
+    ],
+    "require": "test/babel-register.js",
+    "unhandled-rejections": "strict"
+}

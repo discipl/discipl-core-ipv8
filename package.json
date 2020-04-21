@@ -1,10 +1,21 @@
 {
   "name": "discipl-core-ipv8",
-  "version": "1.0.0",
+  "version": "0.0.1",
   "description": "Discipl Core Connector for IPV8 network overlays",
-  "main": "index.js",
+  "main": "dist/Ipv8Connecotr.js",
+  "module": "dist/Ipv8Connector.js",
+  "types": "dist/Ipv8Connector.d.ts",
   "scripts": {
-    "test": "vows test/discipl-core-ipv8-test.js --spec"
+    "prepack": "npm run build",
+    "build": "npm run build:types && npm run build:js",
+    "build:types": "tsc --emitDeclarationOnly",
+    "build:js": "babel src --out-dir dist --extensions \".ts\"",
+    "test": "mocha --spec \"test/**/*.spec.ts\"",
+    "test:unit": "mocha --spec \"test/unit/**/*.spec.ts\"",
+    "test:integration": "mocha --spec \"test/integration/**/*.spec.ts\"",
+    "test:coverage": "nyc mocha --spec \"test/**/*.spec.ts\"",
+    "lint": "eslint \"src/**\"",
+    "lint:fix": "eslint \"src/**\" --fix"
   },
   "repository": {
     "type": "git",
@@ -16,14 +27,39 @@
     "url": "https://github.com/discipl/discipl-core-ipv8/issues"
   },
   "homepage": "https://github.com/discipl/discipl-core-ipv8#readme",
-  "devDependencies": {
-    "assert": "1.4.1",
-    "vows": "0.8.2"
-  },
   "dependencies": {
-    "discipl-core-baseconnector": "git+https://github.com/discipl/discipl-core-baseconnector.git",
-    "crypto-js": "3.1.9-1",
-    "request": "2.88.0",
-    "request-promise-native": "1.0.5"
+    "@discipl/core-baseconnector": "0.2.2",
+    "core-js": "3.6.4",
+    "isomorphic-fetch": "2.2.1",
+    "json-stable-stringify": "1.0.1",
+    "loglevel": "1.6.7",
+    "node-fetch": "2.6.0",
+    "node-forge": "0.9.1"
+  },
+  "devDependencies": {
+    "@babel/cli": "7.8.4",
+    "@babel/core": "7.8.7",
+    "@babel/plugin-proposal-class-properties": "7.8.3",
+    "@babel/preset-env": "7.8.7",
+    "@babel/preset-typescript": "7.9.0",
+    "@babel/register": "7.9.0",
+    "@istanbuljs/nyc-config-babel": "3.0.0",
+    "@types/chai": "4.2.11",
+    "@types/chai-as-promised": "7.1.2",
+    "@types/json-stable-stringify": "1.0.32",
+    "@types/mocha": "7.0.2",
+    "@types/node-fetch": "2.5.5",
+    "@types/node-forge": "0.9.2",
+    "@types/sinon": "9.0.0",
+    "@typescript-eslint/eslint-plugin": "2.24.0",
+    "@typescript-eslint/parser": "2.24.0",
+    "babel-plugin-istanbul": "6.0.0",
+    "chai": "4.2.0",
+    "chai-as-promised": "7.1.1",
+    "mocha": "7.1.1",
+    "nyc": "15.0.0",
+    "sinon": "9.0.2",
+    "standard": "12.0.1",
+    "typescript": "3.8.3"
   }
 }
