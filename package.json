@@ -1,5 +1,5 @@
 {
-  "name": "discipl-core-ipv8",
+  "name": "@discipl/core-ipv8",
   "version": "0.0.1",
   "description": "Discipl Core Connector for IPV8 network overlays",
   "main": "dist/Ipv8Connecotr.js",
