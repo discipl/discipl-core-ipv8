@@ -7,7 +7,7 @@ import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
 
 import forge from 'node-forge'
 
-export class Ipv8Connector extends BaseConnector {
+class Ipv8Connector extends BaseConnector {
   LINK_TEMPORARY_INIDACOTR = 'temp'
   LINK_PERMANTENT_INDICATOR = 'perm'
   LINK_DELIMITER = ':'
@@ -316,3 +316,5 @@ export class Ipv8Connector extends BaseConnector {
     throw new Error('Method not implemented.')
   }
 }
+
+export default Ipv8Connector

@@ -1,6 +1,6 @@
 import { expect } from 'chai'
 import { Ipv8DockerUtil } from './util/ipv8docker'
-import { Ipv8Connector } from '../../src/Ipv8Connector'
+import Ipv8Connector from '../../src/Ipv8Connector'
 
 describe('Ipv8Connector.ts', function () {
   this.beforeAll(function (done) {
