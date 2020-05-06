@@ -1,4 +1,4 @@
-import { Ipv8Connector } from '../../src/Ipv8Connector'
+import Ipv8Connector from '../../src/Ipv8Connector'
 import { Ipv8AttestationClient } from '../../src/client/Ipv8AttestationClient'
 import sinon from 'sinon'
 import { use, expect } from 'chai'

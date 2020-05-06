@@ -1,9 +1,9 @@
 {
-  "name": "discipl-core-ipv8",
+  "name": "@discipl/core-ipv8",
   "version": "0.0.1",
   "description": "Discipl Core Connector for IPV8 network overlays",
-  "main": "dist/Ipv8Connecotr.js",
-  "module": "dist/Ipv8Connector.js",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
   "types": "dist/Ipv8Connector.d.ts",
   "scripts": {
     "prepack": "npm run build",
@@ -29,7 +29,6 @@
   "homepage": "https://github.com/discipl/discipl-core-ipv8#readme",
   "dependencies": {
     "@discipl/core-baseconnector": "0.2.2",
-    "core-js": "3.6.4",
     "isomorphic-fetch": "2.2.1",
     "json-stable-stringify": "1.0.1",
     "loglevel": "1.6.7",
