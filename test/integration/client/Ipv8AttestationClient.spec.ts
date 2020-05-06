@@ -48,14 +48,16 @@ describe('Ipv8AttestationClient.ts', function () {
   })
 
   it('should be able to verify the value of an attribute', async function () {
-    this.slow(900)
+    this.timeout(2000)
+    this.slow(2000)
 
     // Ask for verification
     const brewerAttestationClient = new Ipv8AttestationClient(peers.brewer.url)
     const verifyResult = await brewerAttestationClient.verify(peers.employee.mid, 'c0Tgk2k404E5b0XfOz9MrsVlv0Q=', 'approve')
     expect(verifyResult).to.deep.equal({ success: true }, 'Unexpected result when asking for verification')
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    // Wait for the verify request to be processed
+    await new Promise((resolve) => setTimeout(() => resolve(), 500))
 
     // Get outstanding verifications
     const employeeAttestationClient = new Ipv8AttestationClient(peers.employee.url)
@@ -66,8 +68,8 @@ describe('Ipv8AttestationClient.ts', function () {
     // Allow verification. The order of execution for these calls is imporant so a chaining style is used
     return employeeAttestationClient.allowVerify('eGU/YRXWJB18VQf8UbOoIhW9+xM=', 'time_for_beer')
       .then(res => expect(res).to.deep.equal({ success: true }, 'unexpected  result when allowing verification'))
-      // IPv8 needs some time to verify the attestation
-      .then(() => new Promise(resolve => setTimeout(resolve, 400)))
+      // IPv8 needs some time to process the request
+      .then(() => new Promise(resolve => setTimeout(resolve, 600)))
       .then(() => brewerAttestationClient.getVerificationOutput())
       .then(res => expect(res).to.deep.equal([{
         attributeHash: 'c0Tgk2k404E5b0XfOz9MrsVlv0Q=',

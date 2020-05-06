@@ -4,7 +4,7 @@ import Ipv8Connector from '../../src/Ipv8Connector'
 
 describe('Ipv8Connector.ts', function () {
   this.beforeAll(function (done) {
-    this.timeout(30000)
+    this.timeout(60000)
     Ipv8DockerUtil.startIpv8Container()
       .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(() => done()))
   })
@@ -20,13 +20,15 @@ describe('Ipv8Connector.ts', function () {
   }
 
   it('should claim something', async function () {
+    this.slow(2000)
+    this.timeout(3000)
     const employeeConnector = new Ipv8Connector()
     const employerConnector = new Ipv8Connector()
     employeeConnector.configure(peers.employee.url)
     employerConnector.configure(peers.employer.url)
 
     const tempLink = await employeeConnector.claim(peers.employee.did, '', { timeFor: 'beer' }, peers.employer.did)
-
+    await new Promise((resolve) => setTimeout(() => resolve(), 1000))
     expect(tempLink).to.eq('link:discipl:ipv8:temp:eyJ0aW1lRm9yIjoiYmVlciJ9')
     expect(await fetch(`${peers.employer.url}/attestation?type=outstanding`).then(res => res.json())).to.deep.eq([[
       'safeqEkAA2ouwLQ2dayMRWEfsH0=',
@@ -63,7 +65,7 @@ describe('Ipv8Connector.ts', function () {
   })
 
   it('should be able to verify an attested claim', function (done) {
-    this.slow(5000)
+    this.slow(6500)
     this.timeout(5000)
     const brewerConnector = new Ipv8Connector()
     const employeeConnector = new Ipv8Connector()
@@ -73,7 +75,7 @@ describe('Ipv8Connector.ts', function () {
     setTimeout(() => {
       employeeConnector.ipv8AttestationClient
         .allowVerify('eGU/YRXWJB18VQf8UbOoIhW9+xM=', 'time_for_beer')
-    }, 1000)
+    }, 2000)
 
     brewerConnector.verify(peers.employee.did, { 'approve': 'link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f' }, peers.brewer.did)
       .then(link => expect(link).to.eq('link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f'))
