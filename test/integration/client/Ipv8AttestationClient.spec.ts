@@ -55,6 +55,8 @@ describe('Ipv8AttestationClient.ts', function () {
     const verifyResult = await brewerAttestationClient.verify(peers.employee.mid, 'c0Tgk2k404E5b0XfOz9MrsVlv0Q=', 'approve')
     expect(verifyResult).to.deep.equal({ success: true }, 'Unexpected result when asking for verification')
 
+    await new Promise((resolve) => setTimeout(resolve, 100))
+
     // Get outstanding verifications
     const employeeAttestationClient = new Ipv8AttestationClient(peers.employee.url)
     const outstandingResult = await employeeAttestationClient.getOutstandingVerify()
