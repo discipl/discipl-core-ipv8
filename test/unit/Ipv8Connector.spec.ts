@@ -49,7 +49,17 @@ describe('Ipv8Connector.ts', function () {
       sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'attester_mid', publicKey: 'pubkey' })
     })
 
-    it('should be able to create a new claim', async function () {
+    it('should be able to create a new claim with a string as data', async function () {
+      sinon.restore()
+      sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'base64mid', publicKey: 'pubkey' })
+      sinon.mock(attestationClient).expects('requestAttestation').once().withArgs('ZGF0YQ==', 'base64mid')
+
+      const link = await connector.claim('owner_mid', 'irrelevant', 'data', 'attester_mid')
+
+      expect(link).to.eq('link:discipl:ipv8:temp:ZGF0YQ==')
+    })
+
+    it('should be able to create a new claim with a object as data', async function () {
       sinon.restore()
       sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'base64mid', publicKey: 'pubkey' })
       sinon.mock(attestationClient).expects('requestAttestation').once().withArgs('eyJuZWVkIjoiYmVlciJ9', 'base64mid')

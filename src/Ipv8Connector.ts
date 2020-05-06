@@ -103,7 +103,7 @@ class Ipv8Connector extends BaseConnector {
    * @param attester - Identity that is expected to attest te claim
    * @return Link to the maide claim or attestation.
    */
-  async claim (ssid: string, privkey: string, claim: object, attester: string): Promise<string> {
+  async claim (ssid: string, privkey: string, claim: object|string, attester: string): Promise<string> {
     const objectKeys = Object.keys(claim)
     const objectValues = Object.values(claim)
 
@@ -190,8 +190,12 @@ class Ipv8Connector extends BaseConnector {
   async newClaim (ssid: string, attester: string, data: object|string): Promise<string> {
     const peer = this.extractPeerFromDid(attester)
 
+    if (typeof data === 'object') {
+      data = stringify(data)
+    }
+
     // Attribute names are base64 to avoid conflicts with colons when a object is given
-    const stringData = Base64Utils.toBase64(stringify(data))
+    const stringData = Base64Utils.toBase64(data)
     await this.ipv8AttestationClient.requestAttestation(stringData, peer.mid)
 
     return this.linkFromReference(`temp:${stringData}`)
