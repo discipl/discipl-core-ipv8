@@ -29,7 +29,6 @@
   "homepage": "https://github.com/discipl/discipl-core-ipv8#readme",
   "dependencies": {
     "@discipl/core-baseconnector": "0.2.2",
-    "core-js": "3.6.4",
     "isomorphic-fetch": "2.2.1",
     "json-stable-stringify": "1.0.1",
     "loglevel": "1.6.7",
