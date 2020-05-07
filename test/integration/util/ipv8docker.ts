@@ -7,17 +7,16 @@ export class Ipv8DockerUtil {
     static waitForContainersToBeReady (): Promise<void> {
       return new Promise((resolve) => {
         const waitForPeers = setInterval(() => {
-          console.log('waiting for IPv8 to be ready')
           fetch('http://localhost:14410/attestation?type=peers')
             .then(res => res.json())
             .then(peers => {
-              if (peers.length === 2) {
+              if (peers.includes('K1ifTZ++hPN4UqU24rSc/czfYZY=') && peers.includes('eGU/YRXWJB18VQf8UbOoIhW9+xM=')) {
                 clearInterval(waitForPeers)
                 resolve()
               }
             })
             .catch(() => undefined)
-        }, 1000)
+        }, 500)
       })
     }
 
