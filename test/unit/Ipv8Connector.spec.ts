@@ -7,13 +7,15 @@ import { Ipv8TrustchainClient } from '../../src/client/Ipv8TrustchainClient'
 import { TrustchainBlock } from '../../src/types/ipv8'
 import stringify from 'json-stable-stringify'
 import { Base64Utils } from '../../src/utils/base64'
-
+import { take } from 'rxjs/operators'
+import { Subscription } from 'rxjs'
 use(chaiAsPromised)
 
 describe('Ipv8Connector.ts', function () {
   let connector: Ipv8Connector
   let attestationClient: Ipv8AttestationClient
   let trustchainClient: Ipv8TrustchainClient
+
   beforeEach(() => {
     connector = new Ipv8Connector()
     attestationClient = new Ipv8AttestationClient('')
@@ -38,15 +40,16 @@ describe('Ipv8Connector.ts', function () {
   })
 
   describe('claim', function () {
+    const sandbox = sinon.createSandbox()
+
     beforeEach(() => {
-      sinon.restore()
-      sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'attester_mid', publicKey: 'pubkey' })
+      sandbox.stub(connector, 'extractPeerFromDid').returns({ mid: 'attester_mid', publicKey: 'pubkey' })
     })
 
     it('should be able to create a new claim with a string as data', async function () {
-      sinon.restore()
-      sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'base64mid', publicKey: 'pubkey' })
-      sinon.mock(attestationClient).expects('requestAttestation').once().withArgs('ZGF0YQ==', 'base64mid')
+      sandbox.restore()
+      sandbox.stub(connector, 'extractPeerFromDid').returns({ mid: 'base64mid', publicKey: 'pubkey' })
+      sandbox.mock(attestationClient).expects('requestAttestation').once().withArgs('ZGF0YQ==', 'base64mid')
 
       const link = await connector.claim('owner_mid', 'irrelevant', 'data', 'attester_mid')
 
@@ -54,9 +57,9 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should be able to create a new claim with a object as data', async function () {
-      sinon.restore()
-      sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'base64mid', publicKey: 'pubkey' })
-      sinon.mock(attestationClient).expects('requestAttestation').once().withArgs('eyJuZWVkIjoiYmVlciJ9', 'base64mid')
+      sandbox.restore()
+      sandbox.stub(connector, 'extractPeerFromDid').returns({ mid: 'base64mid', publicKey: 'pubkey' })
+      sandbox.mock(attestationClient).expects('requestAttestation').once().withArgs('eyJuZWVkIjoiYmVlciJ9', 'base64mid')
 
       const link = await connector.claim('owner_mid', 'irrelevant', { 'need': 'beer' }, 'attester_mid')
 
@@ -65,10 +68,10 @@ describe('Ipv8Connector.ts', function () {
 
     it('should be able to attest a claim that has not been attested before', async function () {
       const attributeName = Base64Utils.toBase64(stringify({ 'need': 'beer' }))
-      sinon.stub(attestationClient, 'requestAttestation').resolves()
-      sinon.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: attributeName, peerMid: 'attribute_owner_mid', metadata: '' }])
-      sinon.mock(attestationClient).expects('attest').once().withArgs(attributeName, 'approve', 'attribute_owner_mid').resolves()
-      sinon.mock(trustchainClient).expects('getBlocksForUser').once().withArgs('pubkey').resolves([{ transaction: { name: attributeName }, hash: '1234' }])
+      sandbox.stub(attestationClient, 'requestAttestation').resolves()
+      sandbox.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: attributeName, peerMid: 'attribute_owner_mid', metadata: '' }])
+      sandbox.mock(attestationClient).expects('attest').once().withArgs(attributeName, 'approve', 'attribute_owner_mid').resolves()
+      sandbox.mock(trustchainClient).expects('getBlocksForUser').once().withArgs('pubkey').resolves([{ transaction: { name: attributeName }, hash: '1234' }])
 
       const link = await connector.claim('attribute_owner_mid', 'irrelevant', { 'need': 'beer' }, 'attester_mid')
       const attestLink = await connector.claim('attester_mid', 'irrelevant', { 'approve': link }, 'attester_mid')
@@ -77,9 +80,9 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should be able to reattest a existing claim', async function () {
-      sinon.mock(attestationClient).expects('getOutstanding').once().resolves([{ attributeName: stringify({ 'need': 'beer' }), peerMid: 'ownerMid', hash: 'abcde' }])
-      sinon.mock(trustchainClient).expects('getBlocksForUser').twice().withArgs('pubkey').resolves([{ transaction: { name: stringify({ 'need': 'beer' }) }, hash: '1234' }])
-      sinon.mock(attestationClient).expects('attest').once().withArgs(stringify({ 'need': 'beer' }), 'extra_approve', 'ownerMid')
+      sandbox.mock(attestationClient).expects('getOutstanding').once().resolves([{ attributeName: stringify({ 'need': 'beer' }), peerMid: 'ownerMid', hash: 'abcde' }])
+      sandbox.mock(trustchainClient).expects('getBlocksForUser').twice().withArgs('pubkey').resolves([{ transaction: { name: stringify({ 'need': 'beer' }) }, hash: '1234' }])
+      sandbox.mock(attestationClient).expects('attest').once().withArgs(stringify({ 'need': 'beer' }), 'extra_approve', 'ownerMid')
 
       const attestLink = await connector.claim('owner_mid', 'irrelevant', { 'extra_approve': 'link:discipl:ipv8:perm:1234' }, 'attester_mid')
 
@@ -87,7 +90,7 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should not be able to attest a none existing claim', function () {
-      sinon.stub(attestationClient, 'getOutstanding').resolves([])
+      sandbox.stub(attestationClient, 'getOutstanding').resolves([])
 
       expect(connector.attestClaim('', 'Y2xhaW0=', 'approve'))
         .to.eventually.be.rejected
@@ -96,8 +99,8 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should not be able to reattest a none existing claim', function () {
-      sinon.stub(trustchainClient, 'getBlocksForUser').resolves([])
-      sinon.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: 'some_claim', peerMid: 'owner', metadata: '' }])
+      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([])
+      sandbox.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: 'some_claim', peerMid: 'owner', metadata: '' }])
 
       expect(connector.reattestClaim('', '1234', 'nope'))
         .to.eventually.be.rejected
@@ -125,7 +128,7 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should get the latest claim made by a did', async function () {
-      sinon.stub(trustchainClient, 'getBlocksForUser').resolves([{ hash: 'abcde' }, { hash: 'fghi' }] as TrustchainBlock[])
+      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ hash: 'abcde' }, { hash: 'fghi' }] as TrustchainBlock[])
 
       const lastClaim = await connector.getLatestClaim('irrelevant')
       expect(lastClaim).to.eq('link:discipl:ipv8:perm:abcde')
@@ -133,7 +136,7 @@ describe('Ipv8Connector.ts', function () {
 
     it('should get a calim by a given link', async function () {
       // eslint-disable-next-line @typescript-eslint/camelcase
-      sinon.stub(trustchainClient, 'getBlock').resolves({ hash: 'abcde', previous_hash: 'abcde_prev_hash', transaction: { name: 'my_attribute' } } as TrustchainBlock)
+      sandbox.stub(trustchainClient, 'getBlock').resolves({ hash: 'abcde', previous_hash: 'abcde_prev_hash', transaction: { name: 'my_attribute' } } as TrustchainBlock)
 
       const link = 'link:discipl:ipv8:perm:abcde'
       const claim = await connector.get(link)
@@ -163,30 +166,33 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should wait for the verification result to be available', async function () {
-      connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_S = 0.1
-      sinon.stub(attestationClient, 'getVerificationOutput').resolves([{ attributeHash: 'abcde', attributeValue: 'approve', match: 100 }, { attributeHash: 'fghi', attributeValue: 'nope', match: 0 }])
+      connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS = 100
+      sandbox.stub(attestationClient, 'getVerificationOutput').resolves([{ attributeHash: 'abcde', attributeValue: 'approve', match: 100 }, { attributeHash: 'fghi', attributeValue: 'nope', match: 0 }])
       const result = await connector.waitForVerificationResult('abcde')
 
       expect(result).to.deep.eq({ attributeHash: 'abcde', attributeValue: 'approve', match: 100 })
     })
 
     it('should retry to get the verification result if no result is available yet', async function () {
-      connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_S = 0.1
-      sinon.stub(attestationClient, 'getVerificationOutput')
+      connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS = 10
+      const stub = sandbox.stub(attestationClient, 'getVerificationOutput')
         .onFirstCall().resolves([{ attributeHash: 'fghi', attributeValue: 'nope', match: 0 }])
         .onSecondCall().resolves([{ attributeHash: 'abcde', attributeValue: 'approve', match: 100 }, { attributeHash: 'fghi', attributeValue: 'nope', match: 0 }])
 
       const result = await connector.waitForVerificationResult('abcde')
+      expect(stub.callCount).to.be.eq(2, 'Two calls to the IPv8 node are expected')
       expect(result).to.deep.eq({ attributeHash: 'abcde', attributeValue: 'approve', match: 100 })
     })
   })
 
   describe('verify', () => {
+    const sandbox = sinon.createSandbox()
+
     it('should be able to verify a claim', async function () {
-      sinon.stub(connector, 'extractPeerFromDid').returns({ mid: 'attestor_mid', publicKey: '' })
-      sinon.stub(trustchainClient, 'getBlocksForUser').resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' } }, { hash: 'fghi' }] as TrustchainBlock[])
-      sinon.mock(attestationClient).expects('verify').once().withArgs('attestor_mid', 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', 'approve')
-      sinon.stub(connector, 'waitForVerificationResult').resolves({ attributeHash: 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', attributeValue: 'approve', match: 0.99 })
+      sandbox.stub(connector, 'extractPeerFromDid').returns({ mid: 'attestor_mid', publicKey: '' })
+      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' } }, { hash: 'fghi' }] as TrustchainBlock[])
+      sandbox.mock(attestationClient).expects('verify').once().withArgs('attestor_mid', 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', 'approve')
+      sandbox.stub(connector, 'waitForVerificationResult').resolves({ attributeHash: 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', attributeValue: 'approve', match: 0.99 })
 
       connector.verify('attestor_did', { 'approve': 'link:discipl:ipv8:perm:abcde' }, 'verified_did')
     })
@@ -199,7 +205,7 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should throw an error when a invalid link is given', function () {
-      sinon.stub(connector, 'extractPeerFromDid').returns({ mid: '', publicKey: '' })
+      sandbox.stub(connector, 'extractPeerFromDid').returns({ mid: '', publicKey: '' })
 
       expect(connector.verify('did:discipl:ipv8:1', { 'attestaion': 'link:discipl:ipv8:invalid' }, 'verifier_did'))
         .to.eventually.be.rejected
@@ -208,12 +214,75 @@ describe('Ipv8Connector.ts', function () {
     })
 
     it('should not verify a claim with a temporary link', function () {
-      sinon.stub(connector, 'extractPeerFromDid').returns({ mid: '', publicKey: '' })
+      sandbox.stub(connector, 'extractPeerFromDid').returns({ mid: '', publicKey: '' })
 
       expect(connector.verify('did:discipl:ipv8:1', { 'attestaion': 'link:discipl:ipv8:temp:1234' }, 'verifier_did'))
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
         .and.have.property('message', 'Only an attestation refering to a permanent link can be verified')
+    })
+  })
+
+  describe('observeVerificationRequests', function () {
+    const sandbox = sinon.createSandbox()
+
+    beforeEach(function () {
+      sandbox.stub(connector, 'extractPeerFromDid')
+        .withArgs('some_did').returns({ mid: 'abcde', publicKey: '' })
+        .withArgs('did').returns({ mid: 'efghi', publicKey: '' })
+    })
+
+    it('should emit when a new outstanding request is available', async function () {
+      sandbox.stub(attestationClient, 'getOutstandingVerify').resolves([{ name: 'request', peerMid: 'abcde' }, { name: 'request', peerMid: 'fghij' }])
+      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash' } as TrustchainBlock])
+
+      const observeResult = await connector.observeVerificationRequests('did')
+      const res = observeResult.observable.pipe(take(1)).toPromise()
+
+      expect(res).to.eventually.deep.eq({ claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' })
+    })
+
+    it('should filter on did', async function () {
+      sandbox.stub(attestationClient, 'getOutstandingVerify').resolves([{ name: 'request', peerMid: 'abcde' }, { name: 'request', peerMid: 'fghij' }])
+      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash' } as TrustchainBlock])
+
+      const observeResult = await connector.observeVerificationRequests('did', { did: 'some_did' })
+      const res = observeResult.observable.pipe(take(1)).toPromise()
+
+      expect(res).to.eventually.deep.eq({ claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' })
+    })
+
+    it('should not emit when no outstanding requests are found', function (done) {
+      this.slow(250)
+      connector.OBSERVE_VERIFICATION_POLL_INTERVAL_MS = 10
+
+      sandbox.stub(trustchainClient, 'getBlocksForUser')
+        .resolves([
+          { transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash' },
+          { transaction: { name: 'request2' }, hash: 'block_hash', previous_hash: 'prev_hash' }
+        ] as TrustchainBlock[])
+
+      const stub = sandbox.stub(attestationClient, 'getOutstandingVerify')
+        .returns(Promise.resolve([]))
+        .onSecondCall().returns(Promise.resolve([{ name: 'request', peerMid: 'abcde' }]))
+        .onThirdCall().returns(Promise.resolve([{ name: 'request2', peerMid: 'abcde' }]))
+
+      let subscription: Subscription
+      const results = []
+      connector.observeVerificationRequests('did').then(res => {
+        subscription = res.observable.subscribe(val => results.push(val))
+      })
+
+      setTimeout(() => {
+        subscription.unsubscribe()
+        expect(stub.callCount).to.be.above(3, 'At least three calls to the back-end are expected')
+        expect(results).to.not.deep.include([], 'The result should not contain any empty array')
+        expect(results).to.deep.eq([
+          { claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' },
+          { claim: { data: 'request2', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' }
+        ])
+        done()
+      }, 100)
     })
   })
 })

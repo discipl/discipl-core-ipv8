@@ -1,20 +1,25 @@
-import { BaseConnector, Ssid, Claim } from '@discipl/core-baseconnector'
+import { BaseConnector, Ssid, Claim, ObserveResult, ExtendedClaimInfo } from '@discipl/core-baseconnector'
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
 import { Ipv8Utils } from './utils/ipv8'
 import { Peer, Verification } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
+import { timer, from, iif } from 'rxjs'
+import { filter, map, switchMap, mergeMap } from 'rxjs/operators'
 
 import forge from 'node-forge'
+import { OutstandingVerifyRequest } from './types/ipv8'
 
 class Ipv8Connector extends BaseConnector {
   LINK_TEMPORARY_INIDACOTR = 'temp'
   LINK_PERMANTENT_INDICATOR = 'perm'
   LINK_DELIMITER = ':'
-  VERIFICATION_REQUEST_TIMEOUT_S = 10
-  VERIFICATION_REQUEST_RETRY_TIMEOUT_S = 1
+  VERIFICATION_REQUEST_MAX_RETRIES = 10
+  VERIFICATION_REQUEST_RETRY_TIMEOUT_MS = 1000
   VERIFICATION_MINIMAl_MATCH = 0.99;
+  OBSERVE_VERIFICATION_POLL_INTERVAL_MS = 1000
+
   ipv8AttestationClient: Ipv8AttestationClient
   ipv8TrustchainClient: Ipv8TrustchainClient
 
@@ -42,11 +47,6 @@ class Ipv8Connector extends BaseConnector {
     this.ipv8AttestationClient = new Ipv8AttestationClient(serverEndpoint)
     this.ipv8TrustchainClient = new Ipv8TrustchainClient(serverEndpoint)
   }
-
-  /**
-   * Looks up the corresponding did for a particular claim
-   *
-   * @param link - Link to the claimtemp
 
   /**
    * Extract the information of a {@link Peer} from a given did. The public_key will be stored as a hexadecimal string.
@@ -98,14 +98,14 @@ class Ipv8Connector extends BaseConnector {
    * and not on the order of insertion of attributes.
    * If the exact claim has been made before, this will return the existing link, but not recreate the claim.
    *
-   * @param ssid - Identity that expresses the claim
-   * @param privkey - Private key to sign the claim
-   * @param claim - Made claim. This is the claim itself (that can be any object) of a attestation. A attestation is a object
+   * @param ssid Identity that expresses the claim
+   * @param privkey Private key to sign the claim
+   * @param claim Made claim. This is the claim itself (that can be any object) of a attestation. A attestation is a object
    * with a single key that represents the attestation and a value that holds the actual claim.
-   * @param attester - Identity that is expected to attest te claim
+   * @param attester Identity that is expected to attest te claim
    * @return Link to the maide claim or attestation.
    */
-  async claim (ssid: string, privkey: string, claim: object|string, attester: string): Promise<string> {
+  async claim (ssid: string, privkey: string, claim: object | string, attester: string): Promise<string> {
     const objectKeys = Object.keys(claim)
     const objectValues = Object.values(claim)
 
@@ -189,7 +189,7 @@ class Ipv8Connector extends BaseConnector {
    * @param data Data that is claimed
    * @return Temporary link to the made claim
    */
-  async newClaim (ssid: string, attester: string, data: object|string): Promise<string> {
+  async newClaim (ssid: string, attester: string, data: object | string): Promise<string> {
     const peer = this.extractPeerFromDid(attester)
 
     if (typeof data === 'object') {
@@ -206,13 +206,13 @@ class Ipv8Connector extends BaseConnector {
   /**
    * Verifies existence of a claim with the given data in the channel of the given did
    *
-   * @param {string} attestorDid The did that claimed the data
-   * @param {object} attestation Data that needs to be verified in the format of {@code {'value': 'link'}}
-   * @param {string} verifierDid Did that wants to verify (used for access management)
-   * @param {string} verifierPrivkey Private key of the verifier
-   * @returns {Promise<string>} Link to claim that proves this data, null if such a claim does not exist
+   * @param ownerDid The did that might have claimed the data
+   * @param attestation Data that needs to be verified in the format of {@code {'value': 'link'}}
+   * @param verifierDid Did that wants to verify (used for access management)
+   * @param verifierPrivkey Private key of the verifier
+   * @returns Link to claim that proves this data, null if such a claim does not exist
    */
-  async verify (attestorDid: string, attestation: object, verifierDid: string, verifierPrivkey: string = null): Promise<string> {
+  async verify (ownerDid: string, attestation: object, verifierDid: string, verifierPrivkey: string = null): Promise<string> {
     const attestationKeys = Object.keys(attestation)
     const attestationValues = Object.values(attestation)
 
@@ -222,7 +222,7 @@ class Ipv8Connector extends BaseConnector {
 
     const attestationValue = attestationKeys.pop()
     const link = attestationValues.pop()
-    const peer = this.extractPeerFromDid(attestorDid)
+    const peer = this.extractPeerFromDid(ownerDid)
     const reference = BaseConnector.referenceFromLink(link)
     const refSplit = reference?.split(this.LINK_DELIMITER)
     const indicator = refSplit[0]
@@ -260,9 +260,9 @@ class Ipv8Connector extends BaseConnector {
         const verifications = await this.ipv8AttestationClient.getVerificationOutput()
         const verification = verifications.find(verification => verification.attributeHash === attributeHash)
 
-        if (!verification && retryCount <= this.VERIFICATION_REQUEST_TIMEOUT_S) {
+        if (!verification && retryCount <= this.VERIFICATION_REQUEST_MAX_RETRIES) {
           retryCount++
-        } else if (!verification && retryCount > this.VERIFICATION_REQUEST_TIMEOUT_S) {
+        } else if (!verification && retryCount > this.VERIFICATION_REQUEST_MAX_RETRIES) {
           clearInterval(interval)
           reject(new Error('No verification result received. The peer rejected the verification request or is offline'))
         } else if (verification && verification.match < this.VERIFICATION_MINIMAl_MATCH) {
@@ -271,16 +271,16 @@ class Ipv8Connector extends BaseConnector {
           clearInterval(interval)
           resolve(verification)
         }
-      }, this.VERIFICATION_REQUEST_RETRY_TIMEOUT_S * 1000)
+      }, this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS)
     })
   }
 
   /**
    * Retrieve a claim by its link
    *
-   * @param link - Link to the claim
-   * @param did - Did that wants access
-   * @param privkey - Key of the did requesting access
+   * @param link Link to the claim
+   * @param did Did that wants access
+   * @param privkey Key of the did requesting access
    * @returns Object containing the data of the claim and a link to the claim before it.
    */
   async get (link: string, did: string = null, privkey: string = null): Promise<Claim> {
@@ -320,6 +320,42 @@ class Ipv8Connector extends BaseConnector {
 
   observe (): Promise<void> {
     throw new Error('Method not implemented.')
+  }
+
+  /**
+   * Observe for verification requests.
+   *
+   * This method will actively poll the IPv8 node for outstanding verification requests. It will emit all outstanding request and won't
+   * emit when no requests are found. It does not account for duplicated emits (eg. distinct).
+   *
+   * @param did Only observe claims for this did
+   * @param claimFilter Filter claims on a did
+   * @param accessorDid Did that is observing
+   * @param accessorPrivkey Private key of did that is observing
+   */
+  async observeVerificationRequests (did: string, claimFilter: { did: string } = null, accessorDid: string = null, accessorPrivkey: string = null): Promise<ObserveResult> {
+    const peer = this.extractPeerFromDid(did)
+    const filterPeers = switchMap((outstanding: OutstandingVerifyRequest[]) => outstanding.filter(r => r.peerMid === this.extractPeerFromDid(claimFilter.did).mid))
+
+    const observarable = timer(0, this.OBSERVE_VERIFICATION_POLL_INTERVAL_MS).pipe(
+      switchMap(() => from(this.ipv8AttestationClient.getOutstandingVerify())),
+      outstanding => iif(() => claimFilter !== null, filterPeers(outstanding), outstanding.pipe(switchMap(m => m))),
+      mergeMap(request =>
+        from(this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey))
+          .pipe(
+            map(blocks => blocks.find(b => b.transaction.name === request.name)),
+            filter(block => block !== undefined),
+            map(block => {
+              const link = this.linkFromReference(`perm:${block.hash}`)
+              const prevLink = this.linkFromReference(`perm:${block.previous_hash}`)
+
+              return { claim: { data: request.name, previous: prevLink }, link: link, did: did } as ExtendedClaimInfo
+            })
+          )
+      )
+    )
+
+    return { observable: observarable, readyPromise: Promise.resolve() }
   }
 }
 
