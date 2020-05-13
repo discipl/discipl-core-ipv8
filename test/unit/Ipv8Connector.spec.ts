@@ -1,7 +1,7 @@
 import Ipv8Connector from '../../src/Ipv8Connector'
 import { Ipv8AttestationClient } from '../../src/client/Ipv8AttestationClient'
 import sinon from 'sinon'
-import { use, expect } from 'chai'
+import { use, expect, assert } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Ipv8TrustchainClient } from '../../src/client/Ipv8TrustchainClient'
 import { TrustchainBlock } from '../../src/types/ipv8'
@@ -182,6 +182,20 @@ describe('Ipv8Connector.ts', function () {
       const result = await connector.waitForVerificationResult('abcde')
       expect(stub.callCount).to.be.eq(2, 'Two calls to the IPv8 node are expected')
       expect(result).to.deep.eq({ attributeHash: 'abcde', attributeValue: 'approve', match: 100 })
+    })
+
+    it('should not exeed the maximum retries', async function () {
+      connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS = 10
+      connector.VERIFICATION_REQUEST_MAX_RETRIES = 2
+      const mock = sandbox.mock(attestationClient)
+      mock.expects('getVerificationOutput')
+        .thrice()
+        .resolves([])
+
+      expect(connector.waitForVerificationResult('abcde'))
+        .to.eventually.be.rejected
+        .and.to.be.and.instanceOf(Error)
+        .and.have.property('message', 'No verification result received. The peer rejected the verification request or is offline')
     })
   })
 

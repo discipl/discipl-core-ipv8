@@ -5,8 +5,8 @@ import { Ipv8Utils } from './utils/ipv8'
 import { Peer, Verification } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
-import { timer, from, iif } from 'rxjs'
-import { filter, map, switchMap, mergeMap } from 'rxjs/operators'
+import { timer, from, iif, throwError, of, concat } from 'rxjs'
+import { filter, map, switchMap, mergeMap, retryWhen, take, delay, tap } from 'rxjs/operators'
 
 import forge from 'node-forge'
 import { OutstandingVerifyRequest } from './types/ipv8'
@@ -244,7 +244,7 @@ class Ipv8Connector extends BaseConnector {
 
     await this.ipv8AttestationClient.verify(peer.mid, attributeHash, attestationValue)
 
-    return (await this.waitForVerificationResult(attributeHash)).match > this.VERIFICATION_MINIMAl_MATCH ? link : null
+    return (await this.waitForVerificationResult(attributeHash)).match >= this.VERIFICATION_MINIMAl_MATCH ? link : null
   }
 
   /**
@@ -253,26 +253,18 @@ class Ipv8Connector extends BaseConnector {
    * @param attributeHash Attribute hash to get  the verification result for
    */
   async waitForVerificationResult (attributeHash: string): Promise<Verification> {
-    // The timeout of a verification request specified by IPv8 is 10s
-    return new Promise((resolve, reject) => {
-      const interval = setInterval(async () => {
-        let retryCount = 0
-        const verifications = await this.ipv8AttestationClient.getVerificationOutput()
-        const verification = verifications.find(verification => verification.attributeHash === attributeHash)
-
-        if (!verification && retryCount <= this.VERIFICATION_REQUEST_MAX_RETRIES) {
-          retryCount++
-        } else if (!verification && retryCount > this.VERIFICATION_REQUEST_MAX_RETRIES) {
-          clearInterval(interval)
-          reject(new Error('No verification result received. The peer rejected the verification request or is offline'))
-        } else if (verification && verification.match < this.VERIFICATION_MINIMAl_MATCH) {
-          retryCount++
-        } else {
-          clearInterval(interval)
-          resolve(verification)
-        }
-      }, this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS)
-    })
+    return of(attributeHash).pipe(
+      mergeMap(() => this.ipv8AttestationClient.getVerificationOutput()),
+      map(verifications => verifications.find(v => v.attributeHash === attributeHash)),
+      switchMap(verification => iif(() => verification === undefined || verification.match === 0, throwError('try again'), of(verification))),
+      retryWhen(errors => concat(
+        errors.pipe(
+          delay(this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS),
+          take(this.VERIFICATION_REQUEST_MAX_RETRIES)
+        ),
+        throwError(new Error('No verification result received. The peer rejected the verification request or is offline'))
+      ))
+    ).toPromise()
   }
 
   /**
