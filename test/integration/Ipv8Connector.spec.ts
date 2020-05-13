@@ -1,4 +1,4 @@
-import { expect } from 'chai'
+import { expect, assert } from 'chai'
 import { Ipv8DockerUtil } from './util/ipv8docker'
 import Ipv8Connector from '../../src/Ipv8Connector'
 
@@ -72,10 +72,16 @@ describe('Ipv8Connector.ts', function () {
     brewerConnector.configure(peers.brewer.url)
     employeeConnector.configure(peers.employee.url)
 
-    setTimeout(() => {
-      employeeConnector.ipv8AttestationClient
-        .allowVerify('eGU/YRXWJB18VQf8UbOoIhW9+xM=', 'time_for_beer')
-    }, 2000)
+    employeeConnector.observeVerificationRequests(peers.employee.did, { did: peers.brewer.did }).then(result => {
+      const subscription = result.observable.subscribe({
+        next: c => {
+          employeeConnector.ipv8AttestationClient.allowVerify('eGU/YRXWJB18VQf8UbOoIhW9+xM=', c.claim.data)
+          subscription.unsubscribe()
+        },
+        // ECONNREFUSED is expected since the testcontainer is killed after the test is finished
+        error: e => assert.fail('Error when observing:' + e.message)
+      })
+    })
 
     brewerConnector.verify(peers.employee.did, { 'approve': 'link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f' }, peers.brewer.did)
       .then(link => expect(link).to.eq('link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f'))

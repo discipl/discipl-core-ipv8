@@ -6,7 +6,7 @@ import { Peer, Verification } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
 import { timer, from, iif, throwError, of, concat } from 'rxjs'
-import { filter, map, switchMap, mergeMap, retryWhen, take, delay, tap } from 'rxjs/operators'
+import { filter, map, switchMap, mergeMap, retryWhen, take, delay, distinct } from 'rxjs/operators'
 
 import forge from 'node-forge'
 import { OutstandingVerifyRequest } from './types/ipv8'
@@ -318,7 +318,7 @@ class Ipv8Connector extends BaseConnector {
    * Observe for verification requests.
    *
    * This method will actively poll the IPv8 node for outstanding verification requests. It will emit all outstanding request and won't
-   * emit when no requests are found. It does not account for duplicated emits (eg. distinct).
+   * emit when no requests are found.
    *
    * @param did Only observe claims for this did
    * @param claimFilter Filter claims on a did
@@ -344,7 +344,8 @@ class Ipv8Connector extends BaseConnector {
               return { claim: { data: request.name, previous: prevLink }, link: link, did: did } as ExtendedClaimInfo
             })
           )
-      )
+      ),
+      distinct(r => r.link)
     )
 
     return { observable: observarable, readyPromise: Promise.resolve() }

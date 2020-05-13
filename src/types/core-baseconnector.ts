@@ -35,7 +35,7 @@ declare module '@discipl/core-baseconnector' {
     did: string;
   }
 
-  export interface ObserveResult {
+  export type ObserveResult = {
     observable: Observable<ExtendedClaimInfo>;
     readyPromise: Promise<any>;
   }

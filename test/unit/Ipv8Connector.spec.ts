@@ -273,13 +273,13 @@ describe('Ipv8Connector.ts', function () {
       sandbox.stub(trustchainClient, 'getBlocksForUser')
         .resolves([
           { transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash' },
-          { transaction: { name: 'request2' }, hash: 'block_hash', previous_hash: 'prev_hash' }
+          { transaction: { name: 'request2' }, hash: 'block_hash2', previous_hash: 'prev_hash2' }
         ] as TrustchainBlock[])
 
       const stub = sandbox.stub(attestationClient, 'getOutstandingVerify')
-        .returns(Promise.resolve([]))
-        .onSecondCall().returns(Promise.resolve([{ name: 'request', peerMid: 'abcde' }]))
-        .onThirdCall().returns(Promise.resolve([{ name: 'request2', peerMid: 'abcde' }]))
+        .returns(Promise.resolve([{ name: 'request', peerMid: 'abcde' }]))
+        .onSecondCall().returns(Promise.resolve([{ name: 'request2', peerMid: 'abcde' }]))
+        .onThirdCall().returns(Promise.resolve([]))
 
       let subscription: Subscription
       const results = []
@@ -293,7 +293,7 @@ describe('Ipv8Connector.ts', function () {
         expect(results).to.not.deep.include([], 'The result should not contain any empty array')
         expect(results).to.deep.eq([
           { claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' },
-          { claim: { data: 'request2', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' }
+          { claim: { data: 'request2', previous: 'link:discipl:ipv8:perm:prev_hash2' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash2' }
         ])
         done()
       }, 100)
