@@ -4,7 +4,7 @@ import { Ipv8DockerUtil } from '../util/ipv8docker'
 
 describe('Ipv8AttestationClient.ts', function () {
   this.beforeAll(function (done) {
-    this.timeout(60000)
+    this.timeout(1200000)
     Ipv8DockerUtil.startIpv8Container()
       .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(() => done()))
   })
@@ -48,15 +48,15 @@ describe('Ipv8AttestationClient.ts', function () {
   })
 
   it('should be able to verify the value of an attribute', async function () {
-    this.slow(1200)
-    this.timeout(2000)
+    this.slow(1900)
+    this.timeout(2400)
 
     // Ask for verification
     const brewerAttestationClient = new Ipv8AttestationClient(peers.brewer.url)
     const verifyResult = await brewerAttestationClient.verify(peers.employee.mid, 'c0Tgk2k404E5b0XfOz9MrsVlv0Q=', 'approve')
     expect(verifyResult).to.deep.equal({ success: true }, 'Unexpected result when asking for verification')
 
-    await new Promise((resolve) => setTimeout(resolve, 100))
+    await new Promise((resolve) => setTimeout(resolve, 500))
 
     // Get outstanding verifications
     const employeeAttestationClient = new Ipv8AttestationClient(peers.employee.url)
@@ -78,21 +78,22 @@ describe('Ipv8AttestationClient.ts', function () {
   })
 
   it('should be able to request and attest an attribute', async function () {
-    this.slow(1000)
+    this.timeout(5000)
+    this.slow(4000)
     const employeeAttestationClient = new Ipv8AttestationClient(peers.employee.url)
     await employeeAttestationClient.requestAttestation('time_for_coffee', peers.employer.mid)
     await employeeAttestationClient.requestAttestation('time_for_thee', peers.employer.mid, { kind: 'Mint' })
+    await new Promise((resolve) => setTimeout(() => resolve(), 2000))
 
     const employerAttestationClient = new Ipv8AttestationClient(peers.employer.url)
     const outstandingResult = await employerAttestationClient.getOutstanding()
 
-    expect(outstandingResult.length).to.eq(2, 'unexpected amount of outstanding attestation requests')
-    expect(outstandingResult[0]).to.deep.equal({
+    expect(outstandingResult).to.deep.include({
       attributeName: 'time_for_coffee',
       metadata: 'e30=',
       peerMid: 'safeqEkAA2ouwLQ2dayMRWEfsH0='
     }, 'unexpected outstanding request for attestation')
-    expect(outstandingResult[1]).to.deep.equal({
+    expect(outstandingResult).to.deep.include({
       attributeName: 'time_for_thee',
       metadata: 'eyJraW5kIjogIk1pbnQifQ==',
       peerMid: 'safeqEkAA2ouwLQ2dayMRWEfsH0='

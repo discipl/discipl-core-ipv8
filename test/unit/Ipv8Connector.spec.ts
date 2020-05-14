@@ -1,7 +1,7 @@
 import Ipv8Connector from '../../src/Ipv8Connector'
 import { Ipv8AttestationClient } from '../../src/client/Ipv8AttestationClient'
 import sinon from 'sinon'
-import { use, expect, assert } from 'chai'
+import { use, expect } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Ipv8TrustchainClient } from '../../src/client/Ipv8TrustchainClient'
 import { TrustchainBlock } from '../../src/types/ipv8'
