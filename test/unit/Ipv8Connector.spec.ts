@@ -27,9 +27,7 @@ describe('Ipv8Connector.ts', function () {
   })
 
   it('should extract a IPv8 peer from a did', function () {
-    const peer = connector.extractPeerFromDid('did:discipl:ipv8:eyJtaWQiOiJDTWlVa080RWY4MUtmWkEvbFBnMlU2SzE0bXM9Iiw' +
-      'icHVibGljS2V5IjoiNGM2OTYyNGU2MTQzNGM1MDRiM2FiZjUxN2NiMDAxMjE3N2UxMjY3YzJiODAyYjVlZmEzOTQ4ZWFkMmVjNjFiMjZjY' +
-      'mZmYzA3ZDM2MmM3OWVkZjFiMmU3OTIzZDM4MGI4NzI2MTNjZDdkODkwZGQ4NmExNGIwNjk0NzljNmY3YmRkZTE2NmZkOWFjZjhiOWM3NGE5NSJ9')
+    const peer = connector.extractPeerFromDid('did:discipl:ipv8:TGliTmFDTFBLOr9RfLABIXfhJnwrgCte+jlI6tLsYbJsv/wH02LHnt8bLnkj04C4cmE819iQ3YahSwaUecb3vd4Wb9ms+LnHSpU=')
 
     expect(peer.mid).to.eq('CMiUkO4Ef81KfZA/lPg2U6K14ms=')
     expect(peer.publicKey).to.eq('4c69624e61434c504b3abf517cb0012177e1267c2b802b5efa3948ead2ec61b26cbffc07d362c79edf1b2e7923d380b872613cd7d890dd86a14b069479c6f7bdde166fd9acf8b9c74a95')
@@ -37,10 +35,6 @@ describe('Ipv8Connector.ts', function () {
 
   it('should throw an error when another string than a DID is given', function () {
     expect(() => connector.extractPeerFromDid('nope')).to.throw('The given string is not a valid DID')
-  })
-
-  it('should throw an error when invalid JSON is present in a did', function () {
-    expect(() => connector.extractPeerFromDid('did:discipl:ipv8:nope')).to.throw('Could not parse or decode DID: Invalid base64, URI malformed')
   })
 
   describe('claim', function () {

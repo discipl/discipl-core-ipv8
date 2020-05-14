@@ -1,6 +1,7 @@
 import { BaseConnector, Ssid, Claim } from '@discipl/core-baseconnector'
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
+import { Ipv8Utils } from './utils/ipv8'
 import { Peer, Verification } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
@@ -48,21 +49,22 @@ class Ipv8Connector extends BaseConnector {
    * @param link - Link to the claimtemp
 
   /**
-   * Extract the information of a {@link Peer} from a given did
+   * Extract the information of a {@link Peer} from a given did. The public_key will be stored as a hexadecimal string.
    *
    * @param did Did of a IPv8 peer
    */
   extractPeerFromDid (did: string): Peer {
-    const reference = BaseConnector.referenceFromDid(did)
+    let publicKey = BaseConnector.referenceFromDid(did)
 
-    if (reference === null) {
+    if (publicKey === null) {
       throw new Error('The given string is not a valid DID')
     }
 
-    try {
-      return JSON.parse(Base64Utils.fromBase64(reference))
-    } catch (e) {
-      throw new Error(`Could not parse or decode DID: ${e.message}`)
+    publicKey = forge.util.decode64(publicKey)
+
+    return {
+      publicKey: forge.util.bytesToHex(publicKey),
+      mid: Ipv8Utils.publicKeyToMid(publicKey, 'bytes')
     }
   }
 
@@ -153,7 +155,7 @@ class Ipv8Connector extends BaseConnector {
 
     return this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)
       .then(blocks => blocks.find(block => block.transaction.name === attributeName))
-      .then(attribute => this.linkFromReference(`perm:${attribute.hash}`))
+      .then(block => this.linkFromReference(`perm:${block.hash}`))
   }
 
   /**
