@@ -14,9 +14,9 @@ describe('Ipv8Connector.ts', function () {
   })
 
   const peers = {
-    'employee': { did: 'did:discipl:ipv8:eyJtaWQiOiJzYWZlcUVrQUEyb3V3TFEyZGF5TVJXRWZzSDA9IiwicHVibGljS2V5IjoiNGM2OTYyNGU2MTQzNGM1MDRiM2FmMDNjYTExYzQ2ZTQ5ZDVmZmM5NzkwNzhhMTM4MjgyZDJlZWYxY2ExY2U2OWUwYzQyNzFlODg4ZjY2YzhkNzNjOTNjY2FiMWQ3Yjg5ZTA3ZmQwNDRkYmIyMzQwNjdjNGQ1YmU5ODZhNDRmMzUwYmY4NzBmZTc5ZjQ0OGM1MWVlZSJ9', url: 'http://localhost:14410' },
-    'employer': { did: 'did:discipl:ipv8:eyJtaWQiOiJLMWlmVForK2hQTjRVcVUyNHJTYy9jemZZWlk9IiwicHVibGljS2V5IjoiNGM2OTYyNGU2MTQzNGM1MDRiM2E0MjI5MDEyZDNiMTNlZjQyMmFiNjJlMTg4N2I3YjliMTUxYTBjNTBkM2IxNThlNmM0ZTc5Yjg4ODZjOWI2YzY2NzNmYjFmNmZmZmE1YWMzMWEzYWUzNzRmMDY0OTA0ZGMwMmYxMDg1NDNlMmE2NGMxZTgxMzM2MzQ5MmYyNjg3NiJ9', url: 'http://localhost:14411' },
-    'brewer': { did: 'did:discipl:ipv8:eyJtaWQiOiJlR1UvWVJYV0pCMThWUWY4VWJPb0loVzkreE09In0=', url: 'http://localhost:14412' }
+    'employee': { did: 'did:discipl:ipv8:TGliTmFDTFBLOvA8oRxG5J1f/JeQeKE4KC0u7xyhzmngxCceiI9myNc8k8yrHXuJ4H/QRNuyNAZ8TVvphqRPNQv4cP559EjFHu4=', url: 'http://localhost:14410' },
+    'employer': { did: 'did:discipl:ipv8:TGliTmFDTFBLOkIpAS07E+9CKrYuGIe3ubFRoMUNOxWObE55uIhsm2xmc/sfb/+lrDGjrjdPBkkE3ALxCFQ+KmTB6BM2NJLyaHY=', url: 'http://localhost:14411' },
+    'brewer': { did: 'did:discipl:ipv8:TGliTmFDTFBLOlsQV6DPeSbncCghFrYd86NJTqDEpHSOCeuIZZW3ggI1x5BkFx3CwYzvZqyFxHPmIdJGUhY2bJkzj2Fg6YTeeUw=', url: 'http://localhost:14412' }
   }
 
   it('should claim something', async function () {

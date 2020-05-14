@@ -8,8 +8,8 @@ For an example in how attestation works for IPv8 see `docs/example-attestation-f
 The following implementations of a DID and link are used in the connector:
 
 ```
-ssid:discipl:ipv8:{url: "", mid: ""} // base64 encoded
-link:discipl:ipv8:temp:attribute_name // base64 encoded
+ssid:discipl:ipv8:public_key
+link:discipl:ipv8:temp:attribute_name
 link:discipl:ipv8:perm:trustchain-block-hash
 ```
 
