@@ -222,7 +222,8 @@ class Ipv8Connector extends BaseConnector {
 
     const attestationValue = attestationKeys.pop()
     const link = attestationValues.pop()
-    const peer = this.extractPeerFromDid(ownerDid)
+    const ownerPeer = this.extractPeerFromDid(ownerDid)
+    const verifierPeer = this.extractPeerFromDid(verifierDid)
     const reference = BaseConnector.referenceFromLink(link)
     const refSplit = reference?.split(this.LINK_DELIMITER)
     const indicator = refSplit[0]
@@ -236,13 +237,16 @@ class Ipv8Connector extends BaseConnector {
     }
 
     const blockHash = refSplit[1]
-    const blocks = await this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey)
-    const transactionHash = blocks.find(block => block.hash === blockHash).transaction.hash
+    const block = await this.ipv8TrustchainClient.getBlocksForUser(ownerPeer.publicKey)
+      .then(blocks => blocks.find(block => block.hash === blockHash))
 
-    // The transaction hash needs to be converted into a base64 ISO8859-1 encoded string
-    const attributeHash = forge.util.encode64(decodeURIComponent(escape(forge.util.encodeUtf8(transactionHash))))
+    if (block.public_key !== ownerPeer.publicKey || block.link_public_key !== verifierPeer.publicKey) {
+      throw new Error('The owner and/or verifier does not belong to the given claim')
+    }
 
-    await this.ipv8AttestationClient.verify(peer.mid, attributeHash, attestationValue)
+    const attributeHash = forge.util.encode64(block.transaction.hash)
+
+    await this.ipv8AttestationClient.verify(ownerPeer.mid, attributeHash, attestationValue)
 
     return (await this.waitForVerificationResult(attributeHash)).match >= this.VERIFICATION_MINIMAl_MATCH ? link : null
   }

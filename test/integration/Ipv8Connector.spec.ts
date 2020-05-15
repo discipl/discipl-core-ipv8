@@ -76,7 +76,7 @@ describe('Ipv8Connector.ts', function () {
       })
     })
 
-    brewerConnector.verify(peers.employee.did, { 'approve': 'link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f' }, peers.brewer.did)
+    brewerConnector.verify(peers.employee.did, { 'approve': 'link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f' }, peers.employer.did)
       .then(link => expect(link).to.eq('link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f'))
       .then(() => done())
   })
