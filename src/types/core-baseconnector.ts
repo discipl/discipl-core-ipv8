@@ -1,4 +1,6 @@
 declare module '@discipl/core-baseconnector' {
+  import { Observable } from 'rxjs'
+
   export abstract class BaseConnector {
     abstract getName(): string
     abstract getDidOfClaim(link: string): Promise<string>
@@ -25,5 +27,16 @@ declare module '@discipl/core-baseconnector' {
   export interface Claim {
     data: any;
     previous: string;
+  }
+
+  export interface ExtendedClaimInfo {
+    claim: Claim;
+    link: string;
+    did: string;
+  }
+
+  export type ObserveResult = {
+    observable: Observable<ExtendedClaimInfo>;
+    readyPromise: Promise<any>;
   }
 }
