@@ -260,7 +260,9 @@ class Ipv8Connector extends BaseConnector {
     return of(attributeHash).pipe(
       mergeMap(() => this.ipv8AttestationClient.getVerificationOutput()),
       map(verifications => verifications.find(v => v.attributeHash === attributeHash)),
+      // If the verification is present pass it further, otherwise throw an "try again" error
       switchMap(verification => iif(() => verification === undefined || verification.match === 0, throwError('try again'), of(verification))),
+      // When the "try again" error is thrown, retry after a given delay until the maximum (take) is reached
       retryWhen(errors => concat(
         errors.pipe(
           delay(this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS),
@@ -333,10 +335,13 @@ class Ipv8Connector extends BaseConnector {
     const peer = this.extractPeerFromDid(did)
     const filterPeers = switchMap((outstanding: OutstandingVerifyRequest[]) => outstanding.filter(r => r.peerMid === this.extractPeerFromDid(claimFilter.did).mid))
 
+    // Retreive all outstanding verification requests in the given interval
     const observarable = timer(0, this.OBSERVE_VERIFICATION_POLL_INTERVAL_MS).pipe(
       switchMap(() => from(this.ipv8AttestationClient.getOutstandingVerify())),
+      // When the claimfilter is set apply it, otherwise proceed without filtering
       outstanding => iif(() => claimFilter !== null, filterPeers(outstanding), outstanding.pipe(switchMap(m => m))),
       mergeMap(request =>
+        // To convert a verification request into a link the trustchain block is needed
         from(this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey))
           .pipe(
             map(blocks => blocks.find(b => b.transaction.name === request.name)),
@@ -349,6 +354,7 @@ class Ipv8Connector extends BaseConnector {
             })
           )
       ),
+      // Emit each verification request only once, based on the generated link
       distinct(r => r.link)
     )
 
