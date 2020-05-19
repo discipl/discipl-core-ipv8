@@ -264,38 +264,57 @@ describe('Ipv8Connector.ts', function () {
 
     it('should emit when a new outstanding request is available', async function () {
       sandbox.stub(attestationClient, 'getOutstandingVerify').resolves([{ name: 'request', peerMid: 'abcde' }, { name: 'request', peerMid: 'fghij' }])
-      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash' } as TrustchainBlock])
+      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash', public_key: '7075625f6b6579' } as TrustchainBlock])
 
       const observeResult = await connector.observeVerificationRequests('did')
       const res = observeResult.observable.pipe(take(1)).toPromise()
 
-      expect(res).to.eventually.deep.eq({ claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' })
+      expect(res).to.eventually.deep.eq({ claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, verifier: { did: null, mid: 'abcde' }, did: 'did:discipl:ipv8:cHViX2tleQ==', link: 'link:discipl:ipv8:perm:block_hash' })
     })
 
     it('should filter on did', async function () {
       sandbox.stub(attestationClient, 'getOutstandingVerify').resolves([{ name: 'request', peerMid: 'abcde' }, { name: 'request', peerMid: 'fghij' }])
-      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash' } as TrustchainBlock])
+      sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([{ transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash', public_key: '7075625f6b6579' } as TrustchainBlock])
 
       const observeResult = await connector.observeVerificationRequests('did', { did: 'some_did' })
       const res = observeResult.observable.pipe(take(1)).toPromise()
 
-      expect(res).to.eventually.deep.eq({ claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' })
+      expect(res).to.eventually.deep.eq({ claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, verifier: { did: null, mid: 'abcde' }, did: 'did:discipl:ipv8:cHViX2tleQ==', link: 'link:discipl:ipv8:perm:block_hash' })
     })
 
     it('should not emit when no outstanding requests are found', function (done) {
       this.slow(250)
       connector.OBSERVE_VERIFICATION_POLL_INTERVAL_MS = 10
 
+      sandbox.stub(attestationClient, 'getOutstandingVerify')
+        .returns(Promise.resolve([]))
+
+      let subscription: Subscription
+      const results = []
+      connector.observeVerificationRequests('did').then(res => {
+        subscription = res.observable.subscribe(val => results.push(val))
+      })
+
+      setTimeout(() => {
+        subscription.unsubscribe()
+        expect(results).to.have.lengthOf(0)
+        done()
+      })
+    })
+
+    it('should only emit a outstanding request once', function (done) {
+      this.slow(250)
+      connector.OBSERVE_VERIFICATION_POLL_INTERVAL_MS = 10
+
       sandbox.stub(trustchainClient, 'getBlocksForUser')
         .resolves([
-          { transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash' },
-          { transaction: { name: 'request2' }, hash: 'block_hash2', previous_hash: 'prev_hash2' }
+          { transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash', public_key: '7075625f6b6579' },
+          { transaction: { name: 'request2' }, hash: 'block_hash2', previous_hash: 'prev_hash2', public_key: '7075625f6b6579' }
         ] as TrustchainBlock[])
 
       const stub = sandbox.stub(attestationClient, 'getOutstandingVerify')
         .returns(Promise.resolve([{ name: 'request', peerMid: 'abcde' }]))
         .onSecondCall().returns(Promise.resolve([{ name: 'request2', peerMid: 'abcde' }]))
-        .onThirdCall().returns(Promise.resolve([]))
 
       let subscription: Subscription
       const results = []
@@ -306,10 +325,9 @@ describe('Ipv8Connector.ts', function () {
       setTimeout(() => {
         subscription.unsubscribe()
         expect(stub.callCount).to.be.above(3, 'At least three calls to the back-end are expected')
-        expect(results).to.not.deep.include([], 'The result should not contain any empty array')
         expect(results).to.deep.eq([
-          { claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash' },
-          { claim: { data: 'request2', previous: 'link:discipl:ipv8:perm:prev_hash2' }, did: 'did', link: 'link:discipl:ipv8:perm:block_hash2' }
+          { claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, verifier: { did: null, mid: 'abcde' }, did: 'did:discipl:ipv8:cHViX2tleQ==', link: 'link:discipl:ipv8:perm:block_hash' },
+          { claim: { data: 'request2', previous: 'link:discipl:ipv8:perm:prev_hash2' }, verifier: { did: null, mid: 'abcde' }, did: 'did:discipl:ipv8:cHViX2tleQ==', link: 'link:discipl:ipv8:perm:block_hash2' }
         ])
         done()
       }, 100)

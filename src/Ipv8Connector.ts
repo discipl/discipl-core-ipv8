@@ -349,7 +349,7 @@ class Ipv8Connector extends BaseConnector {
             map(block => {
               const link = this.linkFromReference(`perm:${block.hash}`)
               const prevLink = this.linkFromReference(`perm:${block.previous_hash}`)
-              const ownerDid = "did:discipl:ipv8:" + forge.util.encode64(forge.util.hexToBytes(block.public_key))
+              const ownerDid = 'did:discipl:ipv8:' + forge.util.encode64(forge.util.hexToBytes(block.public_key))
 
               return {
                 claim: { data: request.name, previous: prevLink },
