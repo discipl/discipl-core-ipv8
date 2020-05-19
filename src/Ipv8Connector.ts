@@ -1,4 +1,4 @@
-import { BaseConnector, Ssid, Claim, ObserveResult, ExtendedClaimInfo } from '@discipl/core-baseconnector'
+import { BaseConnector, Ssid, Claim, ObserveResult, ExtendedClaimInfo, VerificationRequest } from '@discipl/core-baseconnector'
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
 import { Ipv8Utils } from './utils/ipv8'
@@ -331,7 +331,7 @@ class Ipv8Connector extends BaseConnector {
    * @param accessorDid Did that is observing
    * @param accessorPrivkey Private key of did that is observing
    */
-  async observeVerificationRequests (did: string, claimFilter: { did: string } = null, accessorDid: string = null, accessorPrivkey: string = null): Promise<ObserveResult> {
+  async observeVerificationRequests (did: string, claimFilter: { did: string } = null, accessorDid: string = null, accessorPrivkey: string = null): Promise<ObserveResult<VerificationRequest>> {
     const peer = this.extractPeerFromDid(did)
     const filterPeers = switchMap((outstanding: OutstandingVerifyRequest[]) => outstanding.filter(r => r.peerMid === this.extractPeerFromDid(claimFilter.did).mid))
 
@@ -349,8 +349,15 @@ class Ipv8Connector extends BaseConnector {
             map(block => {
               const link = this.linkFromReference(`perm:${block.hash}`)
               const prevLink = this.linkFromReference(`perm:${block.previous_hash}`)
+              const ownerDid = "did:discipl:ipv8:" + forge.util.encode64(forge.util.hexToBytes(block.public_key))
 
-              return { claim: { data: request.name, previous: prevLink }, link: link, did: did } as ExtendedClaimInfo
+              return {
+                claim: { data: request.name, previous: prevLink },
+                link: link,
+                did: ownerDid,
+                // A mid cannot be converted back to the public key, so no did is generated
+                verifier: { did: null, mid: request.peerMid }
+              }
             })
           )
       ),

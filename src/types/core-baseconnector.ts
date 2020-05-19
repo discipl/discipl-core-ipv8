@@ -35,8 +35,15 @@ declare module '@discipl/core-baseconnector' {
     did: string;
   }
 
-  export type ObserveResult = {
-    observable: Observable<ExtendedClaimInfo>;
+  export interface VerificationRequest extends ExtendedClaimInfo {
+    verifier: {
+      did: string
+      [key: string]: any
+    }
+  }
+
+  export type ObserveResult<T> = {
+    observable: Observable<T>;
     readyPromise: Promise<any>;
   }
 }
