@@ -37,9 +37,9 @@ declare module '@discipl/core-baseconnector' {
 
   export interface VerificationRequest extends ExtendedClaimInfo {
     verifier: {
-      did: string
-      [key: string]: any
-    }
+      did: string;
+      [key: string]: any;
+    };
   }
 
   export type ObserveResult<T> = {

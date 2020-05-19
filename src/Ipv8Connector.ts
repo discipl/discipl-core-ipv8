@@ -1,4 +1,4 @@
-import { BaseConnector, Ssid, Claim, ObserveResult, ExtendedClaimInfo, VerificationRequest } from '@discipl/core-baseconnector'
+import { BaseConnector, Ssid, Claim, ObserveResult, VerificationRequest } from '@discipl/core-baseconnector'
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
 import { Ipv8Utils } from './utils/ipv8'
