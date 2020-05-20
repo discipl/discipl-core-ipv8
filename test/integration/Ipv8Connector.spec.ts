@@ -44,7 +44,7 @@ describe('Ipv8Connector.ts', function () {
     const employeeConnector = new Ipv8Connector()
     employeeConnector.configure(peers.employee.url)
 
-    const claim = await employeeConnector.get('link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f')
+    const claim = await employeeConnector.get('link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26')
     expect(claim.previous).to.eq('link:discipl:ipv8:perm:3030303030303030303030303030303030303030303030303030303030303030')
     expect(claim.data).to.eq('time_for_beer')
   })
@@ -76,8 +76,8 @@ describe('Ipv8Connector.ts', function () {
       })
     })
 
-    brewerConnector.verify(peers.employee.did, { 'approve': 'link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f' }, peers.employer.did)
-      .then(link => expect(link).to.eq('link:discipl:ipv8:perm:862e9a4aa832a9a9d386a2e5002f7fb863c700605ce3e82876be81a2a606275f'))
+    brewerConnector.verify(peers.employee.did, { 'approve': 'link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26' }, peers.employer.did)
+      .then(link => expect(link).to.eq('link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26'))
       .then(() => done())
   })
 })

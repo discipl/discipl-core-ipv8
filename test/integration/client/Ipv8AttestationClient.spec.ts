@@ -33,7 +33,6 @@ describe('Ipv8AttestationClient.ts', function () {
 
     expect(res.length).to.eq(1, 'unexpected amount of attested attributes')
     expect(res[0].name).to.eq('time_for_beer')
-    expect(res[0].metadata).to.deep.eq({ kind: 'IPA' })
     expect(res[0].attestor).to.eq(peers.employer.mid)
   })
 
@@ -43,7 +42,6 @@ describe('Ipv8AttestationClient.ts', function () {
 
     expect(res.length).to.eq(1, 'unexpected amount of attested attributes')
     expect(res[0].name).to.eq('time_for_beer')
-    expect(res[0].metadata).to.deep.eq({ kind: 'IPA' })
     expect(res[0].attestor).to.eq(peers.employer.mid)
   })
 
@@ -53,7 +51,7 @@ describe('Ipv8AttestationClient.ts', function () {
 
     // Ask for verification
     const brewerAttestationClient = new Ipv8AttestationClient(peers.brewer.url)
-    const verifyResult = await brewerAttestationClient.verify(peers.employee.mid, 'c0Tgk2k404E5b0XfOz9MrsVlv0Q=', 'approve')
+    const verifyResult = await brewerAttestationClient.verify(peers.employee.mid, 'mjAT3TCGB3JmmVYVlwhuEzcxHrY=', 'approve')
     expect(verifyResult).to.deep.equal({ success: true }, 'Unexpected result when asking for verification')
 
     await new Promise((resolve) => setTimeout(resolve, 500))
@@ -71,7 +69,7 @@ describe('Ipv8AttestationClient.ts', function () {
       .then(() => new Promise(resolve => setTimeout(resolve, 400)))
       .then(() => brewerAttestationClient.getVerificationOutput())
       .then(res => expect(res).to.deep.equal([{
-        attributeHash: 'c0Tgk2k404E5b0XfOz9MrsVlv0Q=',
+        attributeHash: 'mjAT3TCGB3JmmVYVlwhuEzcxHrY=',
         attributeValue: 'YXBwcm92ZQ==',
         match: 0.9999847412109375
       }], 'unexpected verification outcome'))
