@@ -6,7 +6,7 @@ import { Peer, Verification } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
 import { timer, from, iif, throwError, of, concat } from 'rxjs'
-import { filter, map, switchMap, mergeMap, retryWhen, take, delay, distinct } from 'rxjs/operators'
+import { filter, map, switchMap, mergeMap, retryWhen, take, delay } from 'rxjs/operators'
 
 import forge from 'node-forge'
 import { OutstandingVerifyRequest } from './types/ipv8'
@@ -129,7 +129,7 @@ class Ipv8Connector extends BaseConnector {
         return this.reattestClaim(ssid, attributeHash, attestationValue)
       }
 
-      throw new Error(`Unknown link indirector: ${indicator}`)
+      throw new Error(`Unknown link indicator: ${indicator}`)
     }
 
     return this.newClaim(ssid, attester, claim)
@@ -248,7 +248,9 @@ class Ipv8Connector extends BaseConnector {
 
     await this.ipv8AttestationClient.verify(ownerPeer.mid, attributeHash, attestationValue)
 
-    return (await this.waitForVerificationResult(attributeHash)).match >= this.VERIFICATION_MINIMAl_MATCH ? link : null
+    return this.waitForVerificationResult(attributeHash)
+      .then(res => res.match >= this.VERIFICATION_MINIMAl_MATCH ? link : null)
+      .catch(_ => null)
   }
 
   /**
@@ -309,11 +311,36 @@ class Ipv8Connector extends BaseConnector {
       }
     }
 
-    throw new Error(`Unknown link indirector: ${indicator}`)
+    throw new Error(`Unknown link indicator: ${indicator}`)
   }
 
-  getDidOfClaim (link: string): Promise<string> {
-    throw new Error('Method not implemented.')
+  /**
+   * Get the DID of the owner of a claim
+   *
+   * @param link Link to a IPv8 claim
+   */
+  async getDidOfClaim (link: string): Promise<string> {
+    const reference = BaseConnector.referenceFromLink(link)
+    const refSplit = reference?.split(this.LINK_DELIMITER)
+
+    if (!refSplit || refSplit.length !== 2) {
+      throw new Error('Could not extract a valid reference from the given link')
+    }
+
+    const indicator = refSplit[0]
+    if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
+      return null
+    }
+
+    if (indicator === this.LINK_PERMANTENT_INDICATOR) {
+      const blockHash = refSplit[1]
+      const block = (await this.ipv8TrustchainClient.getBlock(blockHash))
+
+      // Permanent links are referring to the block of the attestor, so the link_public_key is the owner
+      return Ipv8Utils.publicKeyToDid(block.link_public_key, 'hex')
+    }
+
+    throw new Error(`Unknown link indicator: ${indicator}`)
   }
 
   observe (): Promise<void> {
@@ -349,7 +376,7 @@ class Ipv8Connector extends BaseConnector {
             map(block => {
               const link = this.linkFromReference(`perm:${block.hash}`)
               const prevLink = this.linkFromReference(`perm:${block.previous_hash}`)
-              const ownerDid = 'did:discipl:ipv8:' + forge.util.encode64(forge.util.hexToBytes(block.public_key))
+              const ownerDid = Ipv8Utils.publicKeyToDid(block.public_key, 'hex')
 
               return {
                 claim: { data: request.name, previous: prevLink },
@@ -360,9 +387,7 @@ class Ipv8Connector extends BaseConnector {
               }
             })
           )
-      ),
-      // Emit each verification request only once, based on the generated link
-      distinct(r => r.link)
+      )
     )
 
     return { observable: observarable, readyPromise: Promise.resolve() }
