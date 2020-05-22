@@ -58,6 +58,14 @@ describe('Ipv8Connector.ts', function () {
     expect(claim.previous).to.eq(null)
   })
 
+  it('should get the did of the owner of a claim', async function () {
+    const employeeConnector = new Ipv8Connector()
+    employeeConnector.configure(peers.employee.url)
+
+    const did = await employeeConnector.getDidOfClaim('link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26')
+    expect(did).to.eq(peers.employee.did)
+  })
+
   it('should be able to verify an attested claim', function (done) {
     this.slow(5000)
     this.timeout(10000)

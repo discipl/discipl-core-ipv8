@@ -11,6 +11,7 @@ import { take } from 'rxjs/operators'
 import { Subscription } from 'rxjs'
 use(chaiAsPromised)
 
+/* eslint-disable @typescript-eslint/camelcase */
 describe('Ipv8Connector.ts', function () {
   let connector: Ipv8Connector
   let attestationClient: Ipv8AttestationClient
@@ -37,6 +38,39 @@ describe('Ipv8Connector.ts', function () {
 
   it('should throw an error when another string than a DID is given', function () {
     expect(() => connector.extractPeerFromDid('nope')).to.throw('The given string "nope" is not a valid DID')
+  })
+
+  describe('getDidOfClaim', function () {
+    const sandbox = sinon.createSandbox()
+
+    it('should get the did of a claim with a permanent link', async function () {
+      sandbox.stub(trustchainClient, 'getBlock').withArgs('abcde').resolves({ link_public_key: '7075626b6579' } as TrustchainBlock)
+
+      const did = await connector.getDidOfClaim('link:discipl:ipv8:perm:abcde')
+      expect(did).to.be.eq('did:discipl:ipv8:cHVia2V5')
+    })
+
+    it('should give "null" when a temporary link is given', async function () {
+      const did = await connector.getDidOfClaim('link:discipl:ipv8:temp:abcde')
+      expect(did).to.be.eq(null)
+    })
+
+    it('should throw and error when a invalid link is given', async function () {
+      expect(connector.getDidOfClaim('nope'))
+        .to.eventually.be.rejected
+        .and.to.be.instanceOf(Error)
+        .and.have.property('message', 'Could not extract a valid reference from the given link')
+
+      expect(connector.getDidOfClaim('link:discipl:ipv8:nope'))
+        .to.eventually.be.rejected
+        .and.to.be.instanceOf(Error)
+        .and.have.property('message', 'Could not extract a valid reference from the given link')
+
+      expect(connector.getDidOfClaim('link:discipl:ipv8:nope:abcde'))
+        .to.eventually.be.rejected
+        .and.to.be.instanceOf(Error)
+        .and.have.property('message', 'Unknown link indicator: nope')
+    })
   })
 
   describe('claim', function () {
@@ -112,7 +146,7 @@ describe('Ipv8Connector.ts', function () {
       const invalidLinks = [
         { input: { 'attest': 'link:discipl:ipv8:reference' }, description: 'Without a indicator', error: 'Could not extract a valid reference from the given claim' },
         { input: { 'attest': 'link:discipl:ipv8:perm:1234:second' }, description: 'Too long reference', error: 'Could not extract a valid reference from the given claim' },
-        { input: { 'attest': 'link:discipl:ipv8:invalid:reference' }, description: 'Invalid indicator', error: 'Unknown link indirector: invalid' }
+        { input: { 'attest': 'link:discipl:ipv8:invalid:reference' }, description: 'Invalid indicator', error: 'Unknown link indicator: invalid' }
       ]
 
       invalidLinks.forEach((link) => {
@@ -162,7 +196,7 @@ describe('Ipv8Connector.ts', function () {
       expect(connector.get('link:discipl:ipv8:invalid:eydzb21lJzonb2JqZWN0J30='))
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
-        .and.have.property('message', 'Unknown link indirector: invalid')
+        .and.have.property('message', 'Unknown link indicator: invalid')
     })
 
     it('should wait for the verification result to be available', async function () {
@@ -300,37 +334,6 @@ describe('Ipv8Connector.ts', function () {
         expect(results).to.have.lengthOf(0)
         done()
       })
-    })
-
-    it('should only emit a outstanding request once', function (done) {
-      this.slow(250)
-      connector.OBSERVE_VERIFICATION_POLL_INTERVAL_MS = 10
-
-      sandbox.stub(trustchainClient, 'getBlocksForUser')
-        .resolves([
-          { transaction: { name: 'request' }, hash: 'block_hash', previous_hash: 'prev_hash', public_key: '7075625f6b6579' },
-          { transaction: { name: 'request2' }, hash: 'block_hash2', previous_hash: 'prev_hash2', public_key: '7075625f6b6579' }
-        ] as TrustchainBlock[])
-
-      const stub = sandbox.stub(attestationClient, 'getOutstandingVerify')
-        .returns(Promise.resolve([{ name: 'request', peerMid: 'abcde' }]))
-        .onSecondCall().returns(Promise.resolve([{ name: 'request2', peerMid: 'abcde' }]))
-
-      let subscription: Subscription
-      const results = []
-      connector.observeVerificationRequests('did').then(res => {
-        subscription = res.observable.subscribe(val => results.push(val))
-      })
-
-      setTimeout(() => {
-        subscription.unsubscribe()
-        expect(stub.callCount).to.be.above(3, 'At least three calls to the back-end are expected')
-        expect(results).to.deep.eq([
-          { claim: { data: 'request', previous: 'link:discipl:ipv8:perm:prev_hash' }, verifier: { did: null, mid: 'abcde' }, did: 'did:discipl:ipv8:cHViX2tleQ==', link: 'link:discipl:ipv8:perm:block_hash' },
-          { claim: { data: 'request2', previous: 'link:discipl:ipv8:perm:prev_hash2' }, verifier: { did: null, mid: 'abcde' }, did: 'did:discipl:ipv8:cHViX2tleQ==', link: 'link:discipl:ipv8:perm:block_hash2' }
-        ])
-        done()
-      }, 100)
     })
   })
 })
