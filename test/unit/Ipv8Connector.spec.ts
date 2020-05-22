@@ -36,7 +36,7 @@ describe('Ipv8Connector.ts', function () {
   })
 
   it('should throw an error when another string than a DID is given', function () {
-    expect(() => connector.extractPeerFromDid('nope')).to.throw('The given string is not a valid DID')
+    expect(() => connector.extractPeerFromDid('nope')).to.throw('The given string "nope" is not a valid DID')
   })
 
   describe('claim', function () {
@@ -207,11 +207,11 @@ describe('Ipv8Connector.ts', function () {
         .withArgs('attestor_did').returns({ mid: 'attestor_mid', publicKey: 'attestor_pubkey' })
         .withArgs('verifier_did').returns({ mid: 'verifier_mid', publicKey: 'verifier_pubkey' })
       sandbox.stub(trustchainClient, 'getBlocksForUser')
-        .resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' }, public_key: 'attestor_pubkey', link_public_key: 'verifier_pubkey' }, { hash: 'fghi' }] as TrustchainBlock[])
+        .resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' }, public_key: 'attestor_pubkey', link_public_key: 'verifier_pubkey', linked: { hash: 'verifier_abcde' } }, { hash: 'fghi', linked: { hash: 'verifier_fghi' } }] as TrustchainBlock[])
       sandbox.mock(attestationClient).expects('verify').once().withArgs('attestor_mid', 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', 'approve')
       sandbox.stub(connector, 'waitForVerificationResult').resolves({ attributeHash: 'hEtmlul4dmJ/DXcaFJrIZtQmZ3g=', attributeValue: 'approve', match: 0.99 })
 
-      connector.verify('attestor_did', { 'approve': 'link:discipl:ipv8:perm:abcde' }, 'verifier_did')
+      connector.verify('attestor_did', { 'approve': 'link:discipl:ipv8:perm:verifier_abcde' }, 'verifier_did')
     })
 
     it('should throw an error when an invalid attestation is given', function () {
@@ -230,12 +230,12 @@ describe('Ipv8Connector.ts', function () {
         .and.have.property('message', 'Could not extract a valid reference from the given link')
     })
 
-    it('should trhow an error when the attestor or verifier do not match the given claim', function () {
+    it('should throw an error when the attestor or verifier do not match the given claim', function () {
       sandbox.stub(connector, 'extractPeerFromDid')
         .withArgs('wrong_did').returns({ mid: 'wrong_mid', publicKey: 'wrong_pubkey' })
         .withArgs('verifier_did').returns({ mid: 'verifier_mid', publicKey: 'verifier_pubkey' })
       sandbox.stub(trustchainClient, 'getBlocksForUser')
-        .resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' }, public_key: 'attestor_pubkey', link_public_key: 'verifier_pubkey' }, { hash: 'fghi' }] as TrustchainBlock[])
+        .resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' }, public_key: 'attestor_pubkey', link_public_key: 'verifier_pubkey', linked: { hash: 'verifier_abcde' } }, { hash: 'fghi', linked: { hash: 'verifier_fghi' } }] as TrustchainBlock[])
 
       expect(connector.verify('wrong_did', { 'approve': 'link:discipl:ipv8:perm:abcde' }, 'verifier_did'))
         .to.eventually.be.rejected

@@ -57,7 +57,7 @@ class Ipv8Connector extends BaseConnector {
     let publicKey = BaseConnector.referenceFromDid(did)
 
     if (publicKey === null) {
-      throw new Error('The given string is not a valid DID')
+      throw new Error(`The given string "${did}" is not a valid DID`)
     }
 
     publicKey = forge.util.decode64(publicKey)
@@ -223,7 +223,6 @@ class Ipv8Connector extends BaseConnector {
     const attestationValue = attestationKeys.pop()
     const link = attestationValues.pop()
     const ownerPeer = this.extractPeerFromDid(ownerDid)
-    const verifierPeer = this.extractPeerFromDid(verifierDid)
     const reference = BaseConnector.referenceFromLink(link)
     const refSplit = reference?.split(this.LINK_DELIMITER)
     const indicator = refSplit[0]
@@ -236,11 +235,12 @@ class Ipv8Connector extends BaseConnector {
       throw new Error('Only an attestation refering to a permanent link can be verified')
     }
 
+    // The link is referring to the block that attested the claim, which is the linked block from the owners perspective
     const blockHash = refSplit[1]
     const block = await this.ipv8TrustchainClient.getBlocksForUser(ownerPeer.publicKey)
-      .then(blocks => blocks.find(block => block.hash === blockHash))
+      .then(blocks => blocks.find(block => block.linked && block.linked.hash === blockHash))
 
-    if (block.public_key !== ownerPeer.publicKey || block.link_public_key !== verifierPeer.publicKey) {
+    if (!block || block.public_key !== ownerPeer.publicKey) {
       throw new Error('The owner and/or verifier does not belong to the given claim')
     }
 
