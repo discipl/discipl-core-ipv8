@@ -35,9 +35,9 @@ describe('Ipv8AttestationClient.ts', function () {
     })
 
     it('should apply the input to the query parameters', function () {
-      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=attributes&mid=1234').resolves({ ok: true, json: () => [''] })
+      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=attributes&mid=1234%2B').resolves({ ok: true, json: () => [''] })
 
-      attestationClient.getAttributes('1234')
+      attestationClient.getAttributes('1234+')
     })
   })
 
@@ -49,9 +49,9 @@ describe('Ipv8AttestationClient.ts', function () {
     })
 
     it('should apply the input to the query parameters', function () {
-      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=verify&mid=1234&attribute_hash=abc123&attribute_values=YXBwcm92ZQ%3D%3D').resolves({ ok: true, json: () => '' })
+      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=verify&mid=1234%2B&attribute_hash=abc123%2B&attribute_values=YXBwcm92ZQ%3D%3D').resolves({ ok: true, json: () => '' })
 
-      attestationClient.verify('1234', 'abc123', 'approve')
+      attestationClient.verify('1234+', 'abc123+', 'approve')
     })
   })
 
@@ -63,9 +63,9 @@ describe('Ipv8AttestationClient.ts', function () {
     })
 
     it('should apply the input to the query parameters', function () {
-      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=allow_verify&mid=1234&attribute_name=need_beer').resolves({ ok: true, json: () => '' })
+      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=allow_verify&mid=1234%2B&attribute_name=need_beer%2B').resolves({ ok: true, json: () => '' })
 
-      attestationClient.allowVerify('1234', 'need_beer')
+      attestationClient.allowVerify('1234+', 'need_beer+')
     })
   })
 
@@ -93,9 +93,9 @@ describe('Ipv8AttestationClient.ts', function () {
     })
 
     it('should apply the input to the query parameters', function () {
-      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=request&mid=1234&metadata=eyJzb21lIjoib2JqZWN0In0%3D&attribute_name=need_beer').resolves({ ok: true, json: () => '' })
+      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=request&mid=1234%2B&metadata=eyJzb21lIjoib2JqZWN0In0%3D&attribute_name=need_beer%2B').resolves({ ok: true, json: () => '' })
 
-      attestationClient.requestAttestation('need_beer', '1234', { some: 'object' })
+      attestationClient.requestAttestation('need_beer+', '1234+', { some: 'object' })
     })
   })
 
@@ -107,9 +107,9 @@ describe('Ipv8AttestationClient.ts', function () {
     })
 
     it('should apply the input to the query parameters', function () {
-      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=attest&mid=1234&attribute_name=need_beer&attribute_value=YXBwcm92ZQ%3D%3D').resolves({ ok: true, json: () => '' })
+      globalWithFetch.fetch = sinon.mock().withArgs('/attestation?type=attest&mid=1234%2B&attribute_name=need_beer%2B&attribute_value=YXBwcm92ZQ%3D%3D').resolves({ ok: true, json: () => '' })
 
-      attestationClient.attest('need_beer', 'approve', '1234')
+      attestationClient.attest('need_beer+', 'approve', '1234+')
     })
   })
 })

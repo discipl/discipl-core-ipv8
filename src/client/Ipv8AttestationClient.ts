@@ -1,6 +1,6 @@
+import 'isomorphic-fetch'
 import * as IPv8 from '../types/ipv8'
 import { Base64Utils } from '../utils/base64'
-import 'isomorphic-fetch'
 import { Verification } from '../types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 
@@ -22,7 +22,7 @@ export class Ipv8AttestationClient {
    * @return Array of peer identifiers
    */
   async getPeers (): Promise<string[]> {
-    const urlParams = new URLSearchParams({ type: 'peers' })
+    const urlParams = 'type=peers'
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
     if (!res.ok) {
@@ -36,7 +36,7 @@ export class Ipv8AttestationClient {
    * Get all outstanding requests for attestation
    */
   async getOutstanding (): Promise<IPv8.OutstandingRequest[]> {
-    const urlParams = new URLSearchParams({ type: 'outstanding' })
+    const urlParams = 'type=outstanding'
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
     if (!res.ok) {
@@ -58,10 +58,10 @@ export class Ipv8AttestationClient {
    * @return All attributes of the current peer.
    */
   async getAttributes (mid: string = null): Promise<IPv8.Attribute[]> {
-    const urlParams = new URLSearchParams({ type: 'attributes' })
+    let urlParams = 'type=attributes'
 
     if (mid) {
-      urlParams.append('mid', mid)
+      urlParams += `&mid=${encodeURIComponent(mid)}`
     }
 
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
@@ -87,14 +87,9 @@ export class Ipv8AttestationClient {
    * @param attributeValue Value to verify
    */
   async verify (peer: string, attributeHash: string, attributeValue: string): Promise<IPv8.ApiResponse> {
-    const urlParams = new URLSearchParams({
-      type: 'verify',
-      mid: peer,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      attribute_hash: attributeHash,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      attribute_values: Base64Utils.toBase64(attributeValue)
-    })
+    const urlParams = `type=verify&mid=${encodeURIComponent(peer)}` +
+                      `&attribute_hash=${encodeURIComponent(attributeHash)}` +
+                      `&attribute_values=${encodeURIComponent(Base64Utils.toBase64(attributeValue))}`
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
     if (!res.ok) {
@@ -111,12 +106,7 @@ export class Ipv8AttestationClient {
    * @param attributeName Attribute to allow verification for
    */
   async allowVerify (peer: string, attributeName: string): Promise<IPv8.ApiResponse> {
-    const urlParams = new URLSearchParams({
-      type: 'allow_verify',
-      mid: peer,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      attribute_name: attributeName
-    })
+    const urlParams = `type=allow_verify&mid=${encodeURIComponent(peer)}&attribute_name=${encodeURIComponent(attributeName)}`
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
     if (!res.ok) {
@@ -130,7 +120,7 @@ export class Ipv8AttestationClient {
    * Get all outstanding requests for verification
    */
   async getOutstandingVerify (): Promise<IPv8.OutstandingVerifyRequest[]> {
-    const urlParams = new URLSearchParams({ type: 'outstanding_verify' })
+    const urlParams = 'type=outstanding_verify'
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
     if (!res.ok) {
@@ -148,7 +138,7 @@ export class Ipv8AttestationClient {
    * Get the results of requested verifications
    */
   async getVerificationOutput (): Promise<Verification[]> {
-    const urlParams = new URLSearchParams({ type: 'verification_output' })
+    const urlParams = 'type=verification_output'
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams)
 
     if (!res.ok) {
@@ -177,14 +167,9 @@ export class Ipv8AttestationClient {
    * @param metadata Optional metatadat
    */
   async requestAttestation (attributeName: string, peerToAttest: string, metadata: object = {}): Promise<IPv8.ApiResponse> {
-    const urlParams = new URLSearchParams({
-      type: 'request',
-      mid: peerToAttest,
-      metadata: Base64Utils.toBase64(stringify(metadata)),
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      attribute_name: attributeName
-    })
-
+    const urlParams = `type=request&mid=${encodeURIComponent(peerToAttest)}` +
+                      `&metadata=${encodeURIComponent(Base64Utils.toBase64(stringify(metadata)))}` +
+                      `&attribute_name=${encodeURIComponent(attributeName)}`
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
     if (!res.ok) {
@@ -202,15 +187,9 @@ export class Ipv8AttestationClient {
    * @param attributeOwner The base64 mid of the owner of the attribute
    */
   async attest (attributeName: string, attributeValue: string, attributeOwner: string): Promise<IPv8.ApiResponse> {
-    const urlParams = new URLSearchParams({
-      type: 'attest',
-      mid: attributeOwner,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      attribute_name: attributeName,
-      // eslint-disable-next-line @typescript-eslint/camelcase
-      attribute_value: Base64Utils.toBase64(attributeValue)
-    })
-
+    const urlParams = `type=attest&mid=${encodeURIComponent(attributeOwner)}` +
+                      `&attribute_name=${encodeURIComponent(attributeName)}` +
+                      `&attribute_value=${encodeURIComponent(Base64Utils.toBase64(attributeValue))}`
     const res = await fetch(`${this.baseUrl}/attestation?` + urlParams, { method: 'POST' })
 
     if (!res.ok) {
