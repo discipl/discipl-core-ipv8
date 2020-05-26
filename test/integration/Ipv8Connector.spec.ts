@@ -4,9 +4,12 @@ import Ipv8Connector from '../../src/Ipv8Connector'
 
 describe('Ipv8Connector.ts', function () {
   this.beforeAll(function (done) {
-    this.timeout(1200000)
+    this.timeout(120000)
+
     Ipv8DockerUtil.startIpv8Container()
-      .then(() => Ipv8DockerUtil.waitForContainersToBeReady().then(() => done()))
+      .then(() => Ipv8DockerUtil.waitForContainersToBeReady())
+      .then(() => done())
+      .catch(e => assert.fail(e))
   })
 
   this.afterAll(function (done) {
