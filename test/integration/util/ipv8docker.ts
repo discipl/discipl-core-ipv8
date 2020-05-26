@@ -5,17 +5,21 @@ export class Ipv8DockerUtil {
     static CONTAINER_NAME = 'ipv8'
 
     static waitForContainersToBeReady (): Promise<void> {
-      return new Promise((resolve) => {
+      return new Promise((resolve, reject) => {
         const waitForPeers = setInterval(() => {
-          fetch('http://localhost:14410/attestation?type=peers')
-            .then(res => res.json())
-            .then(peers => {
-              if (peers.includes('K1ifTZ++hPN4UqU24rSc/czfYZY=') && peers.includes('eGU/YRXWJB18VQf8UbOoIhW9+xM=')) {
-                clearInterval(waitForPeers)
-                resolve()
-              }
-            })
-            .catch(() => undefined)
+          exec('docker ps', (err, stdout) => {
+            const isHealthy = stdout.includes('(healthy)')
+            const isUnhealthy = stdout.includes('(unhealthy)')
+
+            if (!err && isHealthy) {
+              clearInterval(waitForPeers)
+              resolve()
+            }
+
+            if (err || isUnhealthy) {
+              reject(new Error('Container healthcheck failed'))
+            }
+          })
         }, 500)
       })
     }
@@ -43,24 +47,6 @@ export class Ipv8DockerUtil {
             this.ipv8ContainerId = stdout
             resolve()
           })
-        })
-      })
-    }
-
-    /**
-     * Stop the running IPv8 container
-     */
-    static stopIpv8Container (): Promise<boolean> {
-      return new Promise((resolve, reject) => {
-        console.log('stopping IPv8 container...')
-
-        exec(`docker stop ${this.ipv8ContainerId}`, (err) => {
-          if (err) {
-            reject(err)
-            return
-          }
-
-          resolve(true)
         })
       })
     }
