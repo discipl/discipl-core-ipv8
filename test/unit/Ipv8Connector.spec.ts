@@ -248,6 +248,17 @@ describe('Ipv8Connector.ts', function () {
       connector.verify('attestor_did', { 'approve': 'link:discipl:ipv8:perm:verifier_abcde' }, 'verifier_did')
     })
 
+    it('should not verify a claim if the attestor did not attest it', function () {
+      sandbox.stub(connector, 'extractPeerFromDid')
+        .withArgs('wrong_did').returns({ mid: 'wrong_mid', publicKey: 'wrong_pubkey' })
+        .withArgs('verifier_did').returns({ mid: 'verifier_mid', publicKey: 'verifier_pubkey' })
+      sandbox.stub(trustchainClient, 'getBlocksForUser')
+        .resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' }, public_key: 'attestor_pubkey', link_public_key: 'verifier_pubkey', linked: { hash: 'verifier_abcde' } }, { hash: 'fghi', linked: { hash: 'verifier_fghi' } }] as TrustchainBlock[])
+
+      expect(connector.verify('wrong_did', { 'approve': 'link:discipl:ipv8:perm:abcde' }, 'verifier_did'))
+        .to.eventually.be.eq(null)
+    })
+
     it('should throw an error when an invalid attestation is given', function () {
       expect(connector.verify('attestor_id', {}, 'verifier_did'))
         .to.eventually.be.rejected
@@ -262,19 +273,6 @@ describe('Ipv8Connector.ts', function () {
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
         .and.have.property('message', 'Could not extract a valid reference from the given link')
-    })
-
-    it('should throw an error when the attestor or verifier do not match the given claim', function () {
-      sandbox.stub(connector, 'extractPeerFromDid')
-        .withArgs('wrong_did').returns({ mid: 'wrong_mid', publicKey: 'wrong_pubkey' })
-        .withArgs('verifier_did').returns({ mid: 'verifier_mid', publicKey: 'verifier_pubkey' })
-      sandbox.stub(trustchainClient, 'getBlocksForUser')
-        .resolves([{ hash: 'abcde', transaction: { name: 'my_attribute', hash: '\u0084Kf\u0096\u00e9xvb\u007f\rw\u001a\u0014\u009a\u00c8f\u00d4&gx' }, public_key: 'attestor_pubkey', link_public_key: 'verifier_pubkey', linked: { hash: 'verifier_abcde' } }, { hash: 'fghi', linked: { hash: 'verifier_fghi' } }] as TrustchainBlock[])
-
-      expect(connector.verify('wrong_did', { 'approve': 'link:discipl:ipv8:perm:abcde' }, 'verifier_did'))
-        .to.eventually.be.rejected
-        .and.to.be.and.instanceOf(Error)
-        .and.have.property('message', 'The owner and/or verifier does not belong to the given claim')
     })
 
     it('should not verify a claim with a temporary link', function () {
