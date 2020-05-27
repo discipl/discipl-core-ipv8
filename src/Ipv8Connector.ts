@@ -206,13 +206,13 @@ class Ipv8Connector extends BaseConnector {
   /**
    * Verifies existence of a claim with the given data in the channel of the given did
    *
-   * @param ownerDid The did that might have claimed the data
+   * @param attestorDid The did that might attested the claim
    * @param attestation Data that needs to be verified in the format of {@code {'value': 'link'}}
    * @param verifierDid Did that wants to verify (used for access management)
    * @param verifierPrivkey Private key of the verifier
    * @returns Link to claim that proves this data, null if such a claim does not exist
    */
-  async verify (ownerDid: string, attestation: object, verifierDid: string, verifierPrivkey: string = null): Promise<string> {
+  async verify (attestorDid: string, attestation: object, verifierDid: string, verifierPrivkey: string = null): Promise<string> {
     const attestationKeys = Object.keys(attestation)
     const attestationValues = Object.values(attestation)
 
@@ -222,7 +222,7 @@ class Ipv8Connector extends BaseConnector {
 
     const attestationValue = attestationKeys.pop()
     const link = attestationValues.pop()
-    const ownerPeer = this.extractPeerFromDid(ownerDid)
+    const attestorPeer = this.extractPeerFromDid(attestorDid)
     const reference = BaseConnector.referenceFromLink(link)
     const refSplit = reference?.split(this.LINK_DELIMITER)
     const indicator = refSplit[0]
@@ -235,18 +235,19 @@ class Ipv8Connector extends BaseConnector {
       throw new Error('Only an attestation refering to a permanent link can be verified')
     }
 
-    // The link is referring to the block that attested the claim, which is the linked block from the owners perspective
     const blockHash = refSplit[1]
-    const block = await this.ipv8TrustchainClient.getBlocksForUser(ownerPeer.publicKey)
-      .then(blocks => blocks.find(block => block.linked && block.linked.hash === blockHash))
+    const block = await this.ipv8TrustchainClient.getBlocksForUser(attestorPeer.publicKey)
+      .then(blocks => blocks.find(block => block.hash === blockHash))
 
-    if (!block || block.public_key !== ownerPeer.publicKey) {
-      throw new Error('The owner and/or verifier does not belong to the given claim')
+    if (!block || block.public_key !== attestorPeer.publicKey) {
+      return null
     }
 
+    // The link is referring to the block that attested the claim, so the linked block is the owner of the claim
     const attributeHash = forge.util.encode64(block.transaction.hash)
+    const ownerMid = Ipv8Utils.publicKeyToMid(block.link_public_key, 'hex')
 
-    await this.ipv8AttestationClient.verify(ownerPeer.mid, attributeHash, attestationValue)
+    await this.ipv8AttestationClient.verify(ownerMid, attributeHash, attestationValue)
 
     return this.waitForVerificationResult(attributeHash)
       .then(res => res.match >= this.VERIFICATION_MINIMAl_MATCH ? link : null)
