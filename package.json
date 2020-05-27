@@ -21,6 +21,9 @@
     "type": "git",
     "url": "git+https://github.com/discipl/discipl-core-ipv8.git"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "author": "Bas Kaptijn",
   "license": "GPL-3.0",
   "bugs": {
