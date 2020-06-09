@@ -1,6 +1,8 @@
 import sinon from 'sinon'
-import { expect } from 'chai'
+import { expect, use } from 'chai'
+import chaiAsPromised from 'chai-as-promised'
 import { Ipv8AttestationClient } from '../../../src/client/Ipv8AttestationClient'
+use(chaiAsPromised)
 
 describe('Ipv8AttestationClient.ts', function () {
   let attestationClient: Ipv8AttestationClient
@@ -24,6 +26,19 @@ describe('Ipv8AttestationClient.ts', function () {
       globalWithFetch.fetch = sinon.mock().resolves({ ok: false, text: () => 'Not found' })
 
       expect(attestationClient.getOutstanding()).to.rejectedWith('Error when sending request to IPv8: Not found')
+    })
+  })
+
+  describe('#findOutstanding', function () {
+    it('should try again if the oustanding request is not found', async function () {
+      const mock = sinon.stub(attestationClient, 'getOutstanding')
+        .onFirstCall().resolves([])
+        .onSecondCall().resolves([{ attributeName: 'attribute', metadata: '', peerMid: 'abcde' }])
+
+      const outstanding = await attestationClient.findOutstanding('attribute')
+
+      expect(outstanding).to.deep.eq({ attributeName: 'attribute', metadata: '', peerMid: 'abcde' })
+      expect(mock.callCount).to.eq(2)
     })
   })
 

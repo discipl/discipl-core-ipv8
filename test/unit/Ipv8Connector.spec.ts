@@ -8,7 +8,7 @@ import { TrustchainBlock } from '../../src/types/ipv8'
 import stringify from 'json-stable-stringify'
 import { Base64Utils } from '../../src/utils/base64'
 import { take } from 'rxjs/operators'
-import { Subscription, config } from 'rxjs'
+import { Subscription } from 'rxjs'
 use(chaiAsPromised)
 
 /* eslint-disable @typescript-eslint/camelcase */
@@ -140,7 +140,7 @@ describe('Ipv8Connector.ts', function () {
     it('should not be able to attest a none existing claim', function () {
       sandbox.stub(attestationClient, 'getOutstanding').resolves([])
 
-      expect(connector.attestClaim('', 'Y2xhaW0=', 'approve'))
+      expect(connector.attestTemporaryLink('', 'Y2xhaW0=', 'approve'))
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
         .and.have.property('message', 'Attestation request for "Y2xhaW0=" could not be found')
@@ -150,7 +150,7 @@ describe('Ipv8Connector.ts', function () {
       sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([])
       sandbox.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: 'some_claim', peerMid: 'owner', metadata: '' }])
 
-      expect(connector.reattestClaim('', '1234', 'nope'))
+      expect(connector.attestPermantentLink('', '1234', 'nope'))
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
         .and.have.property('message', 'Attribute with hash "1234" could not be found')

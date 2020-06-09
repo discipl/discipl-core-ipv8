@@ -133,10 +133,10 @@ class Ipv8Connector extends BaseConnector {
       const indicator = refSplit[0]
       if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
         const attributeName = refSplit[1]
-        return this.attestClaim(ssid, attributeName, attestationValue)
+        return this.attestTemporaryLink(ssid, attributeName, attestationValue)
       } else if (indicator === this.LINK_PERMANTENT_INDICATOR) {
         const attributeHash = refSplit[1]
-        return this.reattestClaim(ssid, attributeHash, attestationValue)
+        return this.attestPermantentLink(ssid, attributeHash, attestationValue)
       }
 
       throw new Error(`Unknown link indicator: ${indicator}`)
@@ -153,9 +153,9 @@ class Ipv8Connector extends BaseConnector {
    * @param attributeName Base64 encoded attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
-  async attestClaim (ssid: string, attributeName: string, attestationValue: string): Promise<string> {
+  async attestTemporaryLink (ssid: string, attributeName: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
-    const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === attributeName)
+    const claim = await this.ipv8AttestationClient.findOutstanding(attributeName)
 
     if (!claim) {
       throw new Error(`Attestation request for "${attributeName}" could not be found`)
@@ -175,7 +175,7 @@ class Ipv8Connector extends BaseConnector {
    * @param attributeHash Hash of the attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
-  async reattestClaim (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
+  async attestPermantentLink (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
     const block = (await this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)).find(blocks => blocks.hash === attributeHash)
     const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === block?.transaction.name)
