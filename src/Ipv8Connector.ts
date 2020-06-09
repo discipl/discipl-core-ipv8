@@ -383,7 +383,7 @@ class Ipv8Connector extends BaseConnector {
                 claim: { data: request.name, previous: prevLink },
                 link: link,
                 did: ownerDid,
-                // A mid cannot be converted back to the public key, so no did is generated
+                // A mid cannot be converted back to the public key, so no did
                 verifier: { did: null, mid: request.peerMid }
               }
             })
@@ -391,7 +391,15 @@ class Ipv8Connector extends BaseConnector {
       )
     )
 
-    return { observable: observarable, readyPromise: Promise.resolve() }
+    const readyPromise = new Promise(async (resolve) => {
+      const peers = await this.ipv8AttestationClient.getPeers()
+
+      if (peers.includes(peer.mid)) {
+        resolve()
+      }
+    })
+
+    return { observable: observarable, readyPromise: readyPromise }
   }
 }
 

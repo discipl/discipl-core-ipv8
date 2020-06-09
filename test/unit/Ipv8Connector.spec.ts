@@ -1,7 +1,7 @@
 import Ipv8Connector from '../../src/Ipv8Connector'
 import { Ipv8AttestationClient } from '../../src/client/Ipv8AttestationClient'
 import sinon from 'sinon'
-import { use, expect } from 'chai'
+import { use, expect, assert } from 'chai'
 import chaiAsPromised from 'chai-as-promised'
 import { Ipv8TrustchainClient } from '../../src/client/Ipv8TrustchainClient'
 import { TrustchainBlock } from '../../src/types/ipv8'
@@ -292,6 +292,7 @@ describe('Ipv8Connector.ts', function () {
       sandbox.stub(connector, 'extractPeerFromDid')
         .withArgs('some_did').returns({ mid: 'abcde', publicKey: '' })
         .withArgs('did').returns({ mid: 'efghi', publicKey: '' })
+      sandbox.stub(attestationClient, 'getPeers').resolves(['abcde', 'efghi'])
     })
 
     it('should emit when a new outstanding request is available', async function () {
@@ -332,6 +333,13 @@ describe('Ipv8Connector.ts', function () {
         expect(results).to.have.lengthOf(0)
         done()
       })
+    })
+
+    it('readyPromise should resolve if the observing did is found in the network', async function () {
+      this.timeout(100)
+      const observeResult = await connector.observeVerificationRequests('did')
+
+      return assert.isFulfilled(observeResult.readyPromise, 'The readyPromise was not fulfilled')
     })
   })
 })
