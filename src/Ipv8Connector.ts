@@ -2,7 +2,7 @@ import { BaseConnector, Ssid, Claim, ObserveResult, VerificationRequest } from '
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
 import { Ipv8Utils } from './utils/ipv8'
-import { Peer, Verification } from './types/ipv8-connector'
+import { Peer, Verification, ConfigOptions } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
 import { timer, from, iif, throwError, of, concat } from 'rxjs'
@@ -41,11 +41,21 @@ class Ipv8Connector extends BaseConnector {
   /**
    * Configure the IPv8 Connector
    *
-   * @param serverEndpoint IPv8 service endpoint without port
+   * @param serverEndpoint IPv8 service endpoint without port number
+   * @param config Configuration options for the IPv8 connector
+   * @param config.VERIFICATION_REQUEST_MAX_RETRIES Maximum amount of retries when waiting for a verification request
+   * @param config.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS Timeout between each retry when waiting for a verification request
+   * @param config.VERIFICATION_MINIMAl_MATCH The minimal match a verification should have to be valid (must be a decimal number like 0.99)
+   * @param config.OBSERVE_VERIFICATION_POLL_INTERVAL_MS Interval on witch outstanding verification requests should be retreived.
    */
-  configure (serverEndpoint: string): void {
+  configure (serverEndpoint: string, config: ConfigOptions = {}): void {
     this.ipv8AttestationClient = new Ipv8AttestationClient(serverEndpoint)
     this.ipv8TrustchainClient = new Ipv8TrustchainClient(serverEndpoint)
+
+    this.VERIFICATION_REQUEST_MAX_RETRIES = config.VERIFICATION_REQUEST_MAX_RETRIES || this.VERIFICATION_REQUEST_MAX_RETRIES
+    this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS = config.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS || this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS
+    this.VERIFICATION_MINIMAl_MATCH = config.VERIFICATION_MINIMAl_MATCH || this.VERIFICATION_MINIMAl_MATCH
+    this.OBSERVE_VERIFICATION_POLL_INTERVAL_MS = config.OBSERVE_VERIFICATION_POLL_INTERVAL_MS || this.OBSERVE_VERIFICATION_POLL_INTERVAL_MS
   }
 
   /**
@@ -204,7 +214,7 @@ class Ipv8Connector extends BaseConnector {
   }
 
   /**
-   * Verifies existence of a claim with the given data in the channel of the given did
+   * Verifies existence of a claim with the given data in the channel of the given did.
    *
    * @param attestorDid The did that might attested the claim
    * @param attestation Data that needs to be verified in the format of {@code {'value': 'link'}}
@@ -352,7 +362,8 @@ class Ipv8Connector extends BaseConnector {
    * Observe for verification requests.
    *
    * This method will actively poll the IPv8 node for outstanding verification requests. It will emit all outstanding request and won't
-   * emit when no requests are found.
+   * emit when no requests are found. The interval of the polling can be configured with the {@link OBSERVE_VERIFICATION_POLL_INTERVAL_MS}
+   * config option.
    *
    * @param did Only observe claims for this did
    * @param claimFilter Filter claims on a did

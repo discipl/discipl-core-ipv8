@@ -8,7 +8,7 @@ import { TrustchainBlock } from '../../src/types/ipv8'
 import stringify from 'json-stable-stringify'
 import { Base64Utils } from '../../src/utils/base64'
 import { take } from 'rxjs/operators'
-import { Subscription } from 'rxjs'
+import { Subscription, config } from 'rxjs'
 use(chaiAsPromised)
 
 /* eslint-disable @typescript-eslint/camelcase */
@@ -27,6 +27,20 @@ describe('Ipv8Connector.ts', function () {
 
   it('should have the name "ipv8"', function () {
     expect(connector.getName()).to.equal('ipv8')
+  })
+
+  it('should let the configure method override the default options', function () {
+    connector.configure('', {
+      VERIFICATION_REQUEST_MAX_RETRIES: 1,
+      VERIFICATION_REQUEST_RETRY_TIMEOUT_MS: 2,
+      VERIFICATION_MINIMAl_MATCH: 0.3,
+      OBSERVE_VERIFICATION_POLL_INTERVAL_MS: 4
+    })
+
+    expect(connector.VERIFICATION_REQUEST_MAX_RETRIES).to.be.equal(1)
+    expect(connector.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS).to.be.equal(2)
+    expect(connector.VERIFICATION_MINIMAl_MATCH).to.be.equal(0.3)
+    expect(connector.OBSERVE_VERIFICATION_POLL_INTERVAL_MS).to.be.equal(4)
   })
 
   it('should extract a IPv8 peer from a did', function () {

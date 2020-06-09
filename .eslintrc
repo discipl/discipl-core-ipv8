@@ -37,6 +37,12 @@
             {
                 "args": "none"
             }
+        ],
+        "@typescript-eslint/camelcase": [
+            "warn",
+            {
+                "properties": "never"
+            }
         ]
     }
 }
