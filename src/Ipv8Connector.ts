@@ -136,7 +136,7 @@ class Ipv8Connector extends BaseConnector {
         return this.attestTemporaryLink(ssid, attributeName, attestationValue)
       } else if (indicator === this.LINK_PERMANTENT_INDICATOR) {
         const attributeHash = refSplit[1]
-        return this.attestPermantentLink(ssid, attributeHash, attestationValue)
+        return this.attestPermanentLink(ssid, attributeHash, attestationValue)
       }
 
       throw new Error(`Unknown link indicator: ${indicator}`)
@@ -175,7 +175,7 @@ class Ipv8Connector extends BaseConnector {
    * @param attributeHash Hash of the attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
-  async attestPermantentLink (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
+  async attestPermanentLink (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
     const block = (await this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)).find(blocks => blocks.hash === attributeHash)
     const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === block?.transaction.name)

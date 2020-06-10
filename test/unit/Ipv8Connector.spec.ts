@@ -150,7 +150,7 @@ describe('Ipv8Connector.ts', function () {
       sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([])
       sandbox.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: 'some_claim', peerMid: 'owner', metadata: '' }])
 
-      expect(connector.attestPermantentLink('', '1234', 'nope'))
+      expect(connector.attestPermanentLink('', '1234', 'nope'))
         .to.eventually.be.rejected
         .and.to.be.and.instanceOf(Error)
         .and.have.property('message', 'Attribute with hash "1234" could not be found')
