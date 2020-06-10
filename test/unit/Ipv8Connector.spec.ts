@@ -137,23 +137,21 @@ describe('Ipv8Connector.ts', function () {
       expect(attestLink).to.eq('link:discipl:ipv8:perm:1234')
     })
 
-    it('should not be able to attest a none existing claim', function () {
+    it('should not be able to attest a none existing claim', async function () {
       sandbox.stub(attestationClient, 'getOutstanding').resolves([])
 
-      expect(connector.attestTemporaryLink('', 'Y2xhaW0=', 'approve'))
-        .to.eventually.be.rejected
-        .and.to.be.and.instanceOf(Error)
-        .and.have.property('message', 'Attestation request for "Y2xhaW0=" could not be found')
+      const result = connector.attestTemporaryLink('', 'Y2xhaW0=', 'approve')
+
+      return assert.isRejected(result, /Attestation request for "Y2xhaW0=" could not be found/)
     })
 
-    it('should not be able to reattest a none existing claim', function () {
+    it('should not be able to reattest a none existing claim', async function () {
       sandbox.stub(trustchainClient, 'getBlocksForUser').resolves([])
       sandbox.stub(attestationClient, 'getOutstanding').resolves([{ attributeName: 'some_claim', peerMid: 'owner', metadata: '' }])
 
-      expect(connector.attestPermanentLink('', '1234', 'nope'))
-        .to.eventually.be.rejected
-        .and.to.be.and.instanceOf(Error)
-        .and.have.property('message', 'Attribute with hash "1234" could not be found')
+      const result = connector.attestPermanentLink('', '1234', 'nope')
+
+      return assert.isRejected(result, /Attribute with hash "1234" could not be found/)
     })
 
     describe('should give an error when a invalid link is given', async function () {

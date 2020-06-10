@@ -30,15 +30,15 @@ describe('Ipv8AttestationClient.ts', function () {
   })
 
   describe('#findOutstanding', function () {
-    it('should try again if the oustanding request is not found', async function () {
+    it('should try 5 times if the oustanding request is not found', async function () {
       const mock = sinon.stub(attestationClient, 'getOutstanding')
-        .onFirstCall().resolves([])
-        .onSecondCall().resolves([{ attributeName: 'attribute', metadata: '', peerMid: 'abcde' }])
+        .resolves([])
+        .onCall(4).resolves([{ attributeName: 'attribute', metadata: '', peerMid: 'abcde' }])
 
       const outstanding = await attestationClient.findOutstanding('attribute')
 
       expect(outstanding).to.deep.eq({ attributeName: 'attribute', metadata: '', peerMid: 'abcde' })
-      expect(mock.callCount).to.eq(2)
+      expect(mock.callCount).to.eq(5)
     })
   })
 

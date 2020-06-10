@@ -371,7 +371,7 @@ class Ipv8Connector extends BaseConnector {
    * @param accessorPrivkey Private key of did that is observing
    */
   async observeVerificationRequests (did: string, claimFilter: { did: string } = null, accessorDid: string = null, accessorPrivkey: string = null): Promise<ObserveResult<VerificationRequest>> {
-    const peer = this.extractPeerFromDid(did)
+    const observingPeer = this.extractPeerFromDid(did)
     const filterPeers = switchMap((outstanding: OutstandingVerifyRequest[]) => outstanding.filter(r => r.peerMid === this.extractPeerFromDid(claimFilter.did).mid))
 
     // Retreive all outstanding verification requests in the given interval
@@ -381,7 +381,7 @@ class Ipv8Connector extends BaseConnector {
       outstanding => iif(() => claimFilter !== null, filterPeers(outstanding), outstanding.pipe(switchMap(m => m))),
       mergeMap(request =>
         // To convert a verification request into a link the trustchain block is needed
-        from(this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey))
+        from(this.ipv8TrustchainClient.getBlocksForUser(observingPeer.publicKey))
           .pipe(
             map(blocks => blocks.find(b => b.transaction.name === request.name)),
             filter(block => block !== undefined),
@@ -405,7 +405,7 @@ class Ipv8Connector extends BaseConnector {
     const readyPromise = new Promise(async (resolve) => {
       const peers = await this.ipv8AttestationClient.getPeers()
 
-      if (peers.includes(peer.mid)) {
+      if (peers.includes(observingPeer.mid)) {
         resolve()
       }
     })
