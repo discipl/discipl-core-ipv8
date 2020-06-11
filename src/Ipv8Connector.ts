@@ -402,15 +402,7 @@ class Ipv8Connector extends BaseConnector {
       )
     )
 
-    const readyPromise: Promise<void> = new Promise(async (resolve) => {
-      const peers = await this.ipv8AttestationClient.getPeers()
-
-      if (peers.includes(observingPeer.mid)) {
-        resolve()
-      }
-    })
-
-    return { observable: observarable, readyPromise: readyPromise }
+    return { observable: observarable, readyPromise: Promise.resolve() }
   }
 }
 

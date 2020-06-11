@@ -346,12 +346,5 @@ describe('Ipv8Connector.ts', function () {
         done()
       })
     })
-
-    it('readyPromise should resolve if the observing did is found in the network', async function () {
-      this.timeout(100)
-      const observeResult = await connector.observeVerificationRequests('did')
-
-      return assert.isFulfilled(observeResult.readyPromise, 'The readyPromise was not fulfilled')
-    })
   })
 })

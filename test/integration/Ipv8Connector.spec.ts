@@ -80,7 +80,7 @@ describe('Ipv8Connector.ts', function () {
     employeeConnector.configure(peers.employee.url)
 
     const observeResult = await employeeConnector.observeVerificationRequests(peers.employee.did, { did: peers.brewer.did })
-    await observeResult.readPromise
+    await observeResult.readyPromise
     const subscription = observeResult.observable.subscribe({
       next: c => {
         employeeConnector.ipv8AttestationClient.allowVerify('eGU/YRXWJB18VQf8UbOoIhW9+xM=', c.claim.data)
