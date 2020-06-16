@@ -2,7 +2,7 @@ import { BaseConnector, Ssid, Claim, ObserveResult, VerificationRequest } from '
 import { Ipv8AttestationClient } from './client/Ipv8AttestationClient'
 import { Base64Utils } from './utils/base64'
 import { Ipv8Utils } from './utils/ipv8'
-import { Peer, Verification } from './types/ipv8-connector'
+import { Peer, Verification, ConfigOptions } from './types/ipv8-connector'
 import stringify from 'json-stable-stringify'
 import { Ipv8TrustchainClient } from './client/Ipv8TrustchainClient'
 import { timer, from, iif, throwError, of, concat } from 'rxjs'
@@ -41,11 +41,21 @@ class Ipv8Connector extends BaseConnector {
   /**
    * Configure the IPv8 Connector
    *
-   * @param serverEndpoint IPv8 service endpoint without port
+   * @param serverEndpoint IPv8 service endpoint without port number
+   * @param config Configuration options for the IPv8 connector
+   * @param config.VERIFICATION_REQUEST_MAX_RETRIES Maximum amount of retries when waiting for a verification request
+   * @param config.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS Timeout between each retry when waiting for a verification request
+   * @param config.VERIFICATION_MINIMAl_MATCH The minimal match a verification should have to be valid (must be a decimal number like 0.99)
+   * @param config.OBSERVE_VERIFICATION_POLL_INTERVAL_MS Interval on witch outstanding verification requests should be retreived.
    */
-  configure (serverEndpoint: string): void {
+  configure (serverEndpoint: string, config: ConfigOptions = {}): void {
     this.ipv8AttestationClient = new Ipv8AttestationClient(serverEndpoint)
     this.ipv8TrustchainClient = new Ipv8TrustchainClient(serverEndpoint)
+
+    this.VERIFICATION_REQUEST_MAX_RETRIES = config.VERIFICATION_REQUEST_MAX_RETRIES || this.VERIFICATION_REQUEST_MAX_RETRIES
+    this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS = config.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS || this.VERIFICATION_REQUEST_RETRY_TIMEOUT_MS
+    this.VERIFICATION_MINIMAl_MATCH = config.VERIFICATION_MINIMAl_MATCH || this.VERIFICATION_MINIMAl_MATCH
+    this.OBSERVE_VERIFICATION_POLL_INTERVAL_MS = config.OBSERVE_VERIFICATION_POLL_INTERVAL_MS || this.OBSERVE_VERIFICATION_POLL_INTERVAL_MS
   }
 
   /**
@@ -123,10 +133,10 @@ class Ipv8Connector extends BaseConnector {
       const indicator = refSplit[0]
       if (indicator === this.LINK_TEMPORARY_INIDACOTR) {
         const attributeName = refSplit[1]
-        return this.attestClaim(ssid, attributeName, attestationValue)
+        return this.attestTemporaryLink(ssid, attributeName, attestationValue)
       } else if (indicator === this.LINK_PERMANTENT_INDICATOR) {
         const attributeHash = refSplit[1]
-        return this.reattestClaim(ssid, attributeHash, attestationValue)
+        return this.attestPermanentLink(ssid, attributeHash, attestationValue)
       }
 
       throw new Error(`Unknown link indicator: ${indicator}`)
@@ -143,9 +153,9 @@ class Ipv8Connector extends BaseConnector {
    * @param attributeName Base64 encoded attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
-  async attestClaim (ssid: string, attributeName: string, attestationValue: string): Promise<string> {
+  async attestTemporaryLink (ssid: string, attributeName: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
-    const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === attributeName)
+    const claim = await this.ipv8AttestationClient.findOutstanding(attributeName)
 
     if (!claim) {
       throw new Error(`Attestation request for "${attributeName}" could not be found`)
@@ -165,7 +175,7 @@ class Ipv8Connector extends BaseConnector {
    * @param attributeHash Hash of the attribute to attest
    * @param attestationValue Value to attest the attribute with
    */
-  async reattestClaim (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
+  async attestPermanentLink (ssid: string, attributeHash: string, attestationValue: string): Promise<string> {
     const attester = this.extractPeerFromDid(ssid)
     const block = (await this.ipv8TrustchainClient.getBlocksForUser(attester.publicKey)).find(blocks => blocks.hash === attributeHash)
     const claim = (await this.ipv8AttestationClient.getOutstanding()).find(outstanding => outstanding.attributeName === block?.transaction.name)
@@ -204,7 +214,7 @@ class Ipv8Connector extends BaseConnector {
   }
 
   /**
-   * Verifies existence of a claim with the given data in the channel of the given did
+   * Verifies existence of a claim with the given data in the channel of the given did.
    *
    * @param attestorDid The did that might attested the claim
    * @param attestation Data that needs to be verified in the format of {@code {'value': 'link'}}
@@ -352,7 +362,8 @@ class Ipv8Connector extends BaseConnector {
    * Observe for verification requests.
    *
    * This method will actively poll the IPv8 node for outstanding verification requests. It will emit all outstanding request and won't
-   * emit when no requests are found.
+   * emit when no requests are found. The interval of the polling can be configured with the {@link OBSERVE_VERIFICATION_POLL_INTERVAL_MS}
+   * config option.
    *
    * @param did Only observe claims for this did
    * @param claimFilter Filter claims on a did
@@ -360,7 +371,7 @@ class Ipv8Connector extends BaseConnector {
    * @param accessorPrivkey Private key of did that is observing
    */
   async observeVerificationRequests (did: string, claimFilter: { did: string } = null, accessorDid: string = null, accessorPrivkey: string = null): Promise<ObserveResult<VerificationRequest>> {
-    const peer = this.extractPeerFromDid(did)
+    const observingPeer = this.extractPeerFromDid(did)
     const filterPeers = switchMap((outstanding: OutstandingVerifyRequest[]) => outstanding.filter(r => r.peerMid === this.extractPeerFromDid(claimFilter.did).mid))
 
     // Retreive all outstanding verification requests in the given interval
@@ -370,7 +381,7 @@ class Ipv8Connector extends BaseConnector {
       outstanding => iif(() => claimFilter !== null, filterPeers(outstanding), outstanding.pipe(switchMap(m => m))),
       mergeMap(request =>
         // To convert a verification request into a link the trustchain block is needed
-        from(this.ipv8TrustchainClient.getBlocksForUser(peer.publicKey))
+        from(this.ipv8TrustchainClient.getBlocksForUser(observingPeer.publicKey))
           .pipe(
             map(blocks => blocks.find(b => b.transaction.name === request.name)),
             filter(block => block !== undefined),
@@ -383,7 +394,7 @@ class Ipv8Connector extends BaseConnector {
                 claim: { data: request.name, previous: prevLink },
                 link: link,
                 did: ownerDid,
-                // A mid cannot be converted back to the public key, so no did is generated
+                // A mid cannot be converted back to the public key, so no did
                 verifier: { did: null, mid: request.peerMid }
               }
             })

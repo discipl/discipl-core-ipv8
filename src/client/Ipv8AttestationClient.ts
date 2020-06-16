@@ -3,6 +3,8 @@ import * as IPv8 from '../types/ipv8'
 import { Base64Utils } from '../utils/base64'
 import { Verification } from '../types/ipv8-connector'
 import stringify from 'json-stable-stringify'
+import { of, empty, iif, throwError, concat, pipe } from 'rxjs'
+import { mergeMap, map, switchMap, retryWhen, delay, take, tap } from 'rxjs/operators'
 
 export class Ipv8AttestationClient {
   private baseUrl: string
@@ -49,6 +51,33 @@ export class Ipv8AttestationClient {
       attributeName: request[1],
       metadata: request[2]
     }))
+  }
+
+  /**
+   * Find a outstanding attestation request by attribute name.
+   *
+   * If no outstanding verification request are found, the client will retry at a maximum of 5 times.
+   * This allows the connector to handle rapid claim and attest workflows and gives IPv8 the time
+   * to sync a new attestation request across it's peers.
+   *
+   * @param attributeName Attribute name to find a outstanding request for
+   * @returns Outstanding verification request, null of no request could be found
+   */
+  async findOutstanding (attributeName: string): Promise<IPv8.OutstandingRequest> {
+    return of(attributeName).pipe(
+      mergeMap(() => this.getOutstanding()),
+      map(outstanding => outstanding.find(o => o.attributeName === attributeName)),
+      // If the outstanding request is found pas it further, otherwise throw an "try again" error
+      switchMap(claim => iif(() => claim === undefined, throwError('try again'), of(claim))),
+      // When the "try again" error is thrown, retry after 200ms until the maximum (take) is reached
+      retryWhen(errors => concat(
+        errors.pipe(
+          delay(200),
+          take(5)
+        ),
+        of(null)
+      ))
+    ).toPromise()
   }
 
   /**

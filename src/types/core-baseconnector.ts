@@ -44,6 +44,6 @@ declare module '@discipl/core-baseconnector' {
 
   export type ObserveResult<T> = {
     observable: Observable<T>;
-    readyPromise: Promise<any>;
+    readyPromise: Promise<void>;
   }
 }

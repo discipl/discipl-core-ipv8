@@ -25,3 +25,10 @@ export interface Peer {
     mid: string;
     publicKey: string;
 }
+
+export interface ConfigOptions {
+    VERIFICATION_REQUEST_MAX_RETRIES?: number;
+    VERIFICATION_REQUEST_RETRY_TIMEOUT_MS?: number;
+    VERIFICATION_MINIMAl_MATCH?: number;
+    OBSERVE_VERIFICATION_POLL_INTERVAL_MS?: number;
+}

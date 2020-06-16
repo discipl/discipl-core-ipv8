@@ -1,6 +1,8 @@
-import { expect, assert } from 'chai'
+import { expect, assert, use } from 'chai'
+import chaiAsPromised from 'chai-as-promised'
 import { Ipv8DockerUtil } from './util/ipv8docker'
 import Ipv8Connector from '../../src/Ipv8Connector'
+use(chaiAsPromised)
 
 describe('Ipv8Connector.ts', function () {
   this.beforeAll(function (done) {
@@ -69,7 +71,7 @@ describe('Ipv8Connector.ts', function () {
     expect(did).to.eq(peers.employee.did)
   })
 
-  it('should be able to verify an attested claim', function (done) {
+  it('should be able to verify an attested claim', async function () {
     this.slow(5000)
     this.timeout(10000)
     const brewerConnector = new Ipv8Connector()
@@ -77,18 +79,17 @@ describe('Ipv8Connector.ts', function () {
     brewerConnector.configure(peers.brewer.url)
     employeeConnector.configure(peers.employee.url)
 
-    employeeConnector.observeVerificationRequests(peers.employee.did, { did: peers.brewer.did }).then(result => {
-      const subscription = result.observable.subscribe({
-        next: c => {
-          employeeConnector.ipv8AttestationClient.allowVerify('eGU/YRXWJB18VQf8UbOoIhW9+xM=', c.claim.data)
-          subscription.unsubscribe()
-        },
-        error: e => assert.fail('Error when observing:' + e.message)
-      })
+    const observeResult = await employeeConnector.observeVerificationRequests(peers.employee.did, { did: peers.brewer.did })
+    await observeResult.readyPromise
+    const subscription = observeResult.observable.subscribe({
+      next: c => {
+        employeeConnector.ipv8AttestationClient.allowVerify('eGU/YRXWJB18VQf8UbOoIhW9+xM=', c.claim.data)
+        subscription.unsubscribe()
+      },
+      error: e => assert.fail('Error when observing:' + e.message)
     })
 
-    brewerConnector.verify(peers.employer.did, { 'approve': 'link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26' }, peers.employer.did)
-      .then(link => expect(link).to.eq('link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26'))
-      .then(() => done())
+    const link = await brewerConnector.verify(peers.employer.did, { 'approve': 'link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26' }, peers.employer.did)
+    expect(link).to.eq('link:discipl:ipv8:perm:4145d2dc63874fe601b8d8cd3efbfd07edff1a04eadee019be2490505ad4ec26')
   })
 })
