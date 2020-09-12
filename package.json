@@ -35,7 +35,7 @@
     "isomorphic-fetch": "2.2.1",
     "json-stable-stringify": "1.0.1",
     "loglevel": "1.6.7",
-    "node-fetch": "2.6.0",
+    "node-fetch": "2.6.1",
     "node-forge": "0.9.1",
     "rxjs": "^6.5.5"
   },
